@@ -58,7 +58,7 @@ enum HomeScriptStateFilter { all, running, abnormal, stopped, offline }
 enum HomeWorkbenchPage { scripts, workspace }
 
 /// Defines the visible home workbench tab for the active script.
-enum HomeWorkbenchTab { status, tasks, stats, logs }
+enum HomeWorkbenchTab { status, tasks, weeklySchedule, stats, logs }
 
 /// Returns whether the tab belongs to the right desktop sidebar.
 bool isHomeWorkbenchSidebarTab(HomeWorkbenchTab value) {
@@ -80,11 +80,16 @@ enum HomeBulkQuickScheduleResult { completed, failed, skipped, timedOut }
 /// Returns the visible workbench tabs for the active layout mode.
 List<HomeWorkbenchTab> resolveHomeWorkbenchTabs(HomeWorkbenchLayoutMode mode) {
   if (mode == HomeWorkbenchLayoutMode.threePane) {
-    return const [HomeWorkbenchTab.status, HomeWorkbenchTab.tasks];
+    return const [
+      HomeWorkbenchTab.status,
+      HomeWorkbenchTab.tasks,
+      HomeWorkbenchTab.weeklySchedule,
+    ];
   }
   return const [
     HomeWorkbenchTab.status,
     HomeWorkbenchTab.tasks,
+    HomeWorkbenchTab.weeklySchedule,
     HomeWorkbenchTab.logs,
     HomeWorkbenchTab.stats,
   ];

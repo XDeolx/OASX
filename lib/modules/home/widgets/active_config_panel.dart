@@ -8,6 +8,7 @@ import 'package:oasx/modules/home/widgets/log_center_panel.dart';
 import 'package:oasx/modules/home/widgets/statistics_panel.dart';
 import 'package:oasx/modules/home/widgets/task_catalog_panel.dart';
 import 'package:oasx/modules/home/widgets/task_status_panel.dart';
+import 'package:oasx/modules/home/widgets/weekly_schedule_panel.dart';
 import 'package:oasx/translation/i18n_content.dart';
 
 class ActiveConfigPanel extends StatelessWidget {
@@ -169,6 +170,9 @@ class ActiveConfigPanel extends StatelessWidget {
         onQuickRun: onQuickRun,
         onQuickWait: onQuickWait,
       ),
+      HomeWorkbenchTab.weeklySchedule => WeeklySchedulePanel(
+        scriptName: script.name,
+      ),
       HomeWorkbenchTab.stats => const ScriptStatisticsPanel(),
       HomeWorkbenchTab.logs => LogCenterPanel(scriptName: script.name),
     };
@@ -178,6 +182,7 @@ class ActiveConfigPanel extends StatelessWidget {
     return switch (value) {
       HomeWorkbenchTab.status => I18n.overview.tr,
       HomeWorkbenchTab.tasks => I18n.homeTasksTab.tr,
+      HomeWorkbenchTab.weeklySchedule => I18n.weeklyScheduleTab.tr,
       HomeWorkbenchTab.stats => I18n.homeStatsTab.tr,
       HomeWorkbenchTab.logs => I18n.log.tr,
     };

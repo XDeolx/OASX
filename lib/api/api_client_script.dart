@@ -1,6 +1,50 @@
 part of 'api_client.dart';
 
 extension ApiClientScriptX on ApiClient {
+  Future<WeeklyScheduleData?> getWeeklySchedule(String scriptName) async {
+    final res = await request(() => get('/$scriptName/weekly_schedule'));
+    if (!res.isSuccess || res.data is! Map) {
+      return null;
+    }
+    return WeeklyScheduleData.fromJson(
+      Map<String, dynamic>.from(res.data as Map),
+    );
+  }
+
+  Future<WeeklyScheduleData?> putWeeklySchedule(
+    String scriptName, {
+    required bool enabled,
+    required List<WeeklyScheduleEntry> entries,
+  }) async {
+    final res = await request(
+      () => put(
+        '/$scriptName/weekly_schedule',
+        data: {
+          'enabled': enabled,
+          'entries': entries.map((entry) => entry.toJson()).toList(),
+        },
+      ),
+    );
+    if (!res.isSuccess || res.data is! Map) {
+      return null;
+    }
+    return WeeklyScheduleData.fromJson(
+      Map<String, dynamic>.from(res.data as Map),
+    );
+  }
+
+  Future<WeeklyScheduleData?> applyWeeklySchedule(String scriptName) async {
+    final res = await request(
+      () => post('/$scriptName/weekly_schedule/apply'),
+    );
+    if (!res.isSuccess || res.data is! Map) {
+      return null;
+    }
+    return WeeklyScheduleData.fromJson(
+      Map<String, dynamic>.from(res.data as Map),
+    );
+  }
+
   /// Loads the full argument model for one task.
   Future<Map<String, dynamic>> getScriptTask(
     String scriptName,
