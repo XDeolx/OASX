@@ -1,0 +1,84 @@
+name: Testoyj Windows Build
+
+on:
+  push:
+    branches:
+      - testoyj
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.35.1"
+  DART_VERSION: "3.9.0"
+
+jobs:
+  build_windows:
+    name: Analyze, test and build Windows
+    runs-on: windows-2022
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+          pub-cache: true
+
+      - name: Verify SDK versions
+        shell: pwsh
+        run: |
+          $flutterOutput = ((flutter --version) | Out-String).Trim()
+          $flutterOutput
+          if ($flutterOutput -notmatch "Flutter $env:FLUTTER_VERSION") {
+            throw "Expected Flutter $env:FLUTTER_VERSION"
+          }
+
+          $dartOutput = ((dart --version 2>&1) | Out-String).Trim()
+          $dartOutput
+          if ($dartOutput -notmatch "Dart SDK version: $env:DART_VERSION") {
+            throw "Expected Dart $env:DART_VERSION"
+          }
+
+      - name: Install dependencies
+        shell: pwsh
+        run: flutter pub get
+
+      - name: Analyze source
+        shell: pwsh
+        run: flutter analyze
+
+      - name: Run tests
+        shell: pwsh
+        run: flutter test
+
+      - name: Build Windows app
+        shell: pwsh
+        run: flutter build windows --release
+
+      - name: Package Windows build
+        shell: pwsh
+        run: |
+          $releasePath = Join-Path $env:GITHUB_WORKSPACE 'build/windows/x64/runner/Release'
+          if (!(Test-Path $releasePath)) {
+            $releasePath = Join-Path $env:GITHUB_WORKSPACE 'build/windows/runner/Release'
+          }
+          if (!(Test-Path $releasePath)) {
+            throw "Windows release directory not found"
+          }
+          Compress-Archive `
+            -Path (Join-Path $releasePath '*') `
+            -DestinationPath (Join-Path $env:GITHUB_WORKSPACE 'oasx_testoyj_windows.zip') `
+            -Force
+
+      - name: Upload Windows test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: oasx_testoyj_windows
+          path: oasx_testoyj_windows.zip
+          if-no-files-found: error
+          retention-days: 14
