@@ -51,11 +51,11 @@ jobs:
       - name: Analyze source
         shell: pwsh
         run: |
-          $analyzeOutput = & flutter analyze 2>&1
+          $analyzeOutput = & flutter analyze --no-pub 2>&1
           $analyzeExitCode = $LASTEXITCODE
           $analyzeOutput | Write-Output
           if ($analyzeExitCode -ne 0) {
-            $annotation = ($analyzeOutput | Out-String)
+            $annotation = ($analyzeOutput | Select-Object -Last 80 | Out-String)
             $annotation = $annotation.Replace('%', '%25')
             $annotation = $annotation.Replace("`r", '%0D').Replace("`n", '%0A')
             Write-Output "::error file=analysis_options.yaml,line=1::$annotation"
