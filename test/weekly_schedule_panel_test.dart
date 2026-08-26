@@ -12,7 +12,7 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      GetMaterialApp(
+      const GetMaterialApp(
         home: Scaffold(
           body: WeeklySchedulePanel(
             scriptName: 'test',
