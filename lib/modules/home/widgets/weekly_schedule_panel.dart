@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oasx/api/api_client.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
+import 'package:oasx/modules/home/models/weekly_schedule_operations.dart';
 import 'package:oasx/translation/i18n_content.dart';
 
 class WeeklySchedulePanel extends StatefulWidget {
-  const WeeklySchedulePanel({super.key, required this.scriptName});
+  const WeeklySchedulePanel({
+    super.key,
+    required this.scriptName,
+    this.initialData,
+  });
 
   final String scriptName;
+  final WeeklyScheduleData? initialData;
 
   @override
   State<WeeklySchedulePanel> createState() => _WeeklySchedulePanelState();
@@ -25,7 +31,15 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   @override
   void initState() {
     super.initState();
-    _load();
+    final initialData = widget.initialData;
+    if (initialData == null) {
+      _load();
+    } else {
+      _data = initialData;
+      _entries = List<WeeklyScheduleEntry>.from(initialData.entries);
+      _enabled = initialData.enabled;
+      _loading = false;
+    }
   }
 
   @override
@@ -149,6 +163,180 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _dirty = true;
     });
     await _save(notify: false);
+  }
+
+  Future<void> _copyDay() async {
+    final source = _selectedWeekday == 0
+        ? DateTime.now().weekday
+        : _selectedWeekday;
+    final request = await _showCopyDayDialog(
+      sourceWeekday: source,
+      targetWeekday: source == 7 ? 1 : source + 1,
+    );
+    if (request == null || !mounted) {
+      return;
+    }
+    if (!_entries.any((entry) => entry.weekday == request.sourceWeekday)) {
+      Get.snackbar(I18n.error.tr, I18n.weeklyScheduleNoSourceEntries.tr);
+      return;
+    }
+    setState(() {
+      _entries = copyWeeklyScheduleDay(
+        entries: _entries,
+        sourceWeekday: request.sourceWeekday,
+        targetWeekday: request.targetWeekday,
+        replaceTarget: request.replaceTarget,
+      );
+      _selectedWeekday = request.targetWeekday;
+      _dirty = true;
+    });
+    if (await _save(notify: false) != null && mounted) {
+      Get.snackbar(I18n.success.tr, I18n.weeklyScheduleDayCopied.tr);
+    }
+  }
+
+  Future<_CopyDayRequest?> _showCopyDayDialog({
+    required int sourceWeekday,
+    required int targetWeekday,
+  }) {
+    var source = sourceWeekday;
+    var target = targetWeekday;
+    var replaceTarget = true;
+    return showDialog<_CopyDayRequest>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(I18n.weeklyScheduleCopyDayTitle.tr),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<int>(
+                  initialValue: source,
+                  decoration: InputDecoration(
+                    labelText: I18n.weeklyScheduleSourceDay.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: _weekdayMenuItems(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => source = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  initialValue: target,
+                  decoration: InputDecoration(
+                    labelText: I18n.weeklyScheduleTargetDay.tr,
+                    border: const OutlineInputBorder(),
+                  ),
+                  items: _weekdayMenuItems(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => target = value);
+                    }
+                  },
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: replaceTarget,
+                  title: Text(I18n.weeklyScheduleReplaceTarget.tr),
+                  onChanged: (value) {
+                    setDialogState(() => replaceTarget = value ?? true);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(I18n.cancel.tr),
+            ),
+            FilledButton(
+              onPressed: source == target
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(
+                        _CopyDayRequest(
+                          sourceWeekday: source,
+                          targetWeekday: target,
+                          replaceTarget: replaceTarget,
+                        ),
+                      ),
+              child: Text(I18n.confirm.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _importCurrentScheduler() async {
+    final importable = _data!.tasks.where(
+      (task) => task.enabled && DateTime.tryParse(task.nextRun) != null,
+    );
+    if (importable.isEmpty) {
+      Get.snackbar(I18n.error.tr, I18n.weeklyScheduleNoEnabledTasks.tr);
+      return;
+    }
+    var replaceExisting = false;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(I18n.weeklyScheduleImportCurrentTitle.tr),
+          content: SizedBox(
+            width: 420,
+            child: CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: replaceExisting,
+              title: Text(I18n.weeklyScheduleReplaceExisting.tr),
+              subtitle: Text('${importable.length}'),
+              onChanged: (value) {
+                setDialogState(() => replaceExisting = value ?? false);
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(I18n.cancel.tr),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(I18n.confirm.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    setState(() {
+      _entries = buildEntriesFromCurrentScheduler(
+        entries: _entries,
+        tasks: _data!.tasks,
+        replaceExisting: replaceExisting,
+      );
+      _selectedWeekday = 0;
+      _dirty = true;
+    });
+    if (await _save(notify: false) != null && mounted) {
+      Get.snackbar(I18n.success.tr, I18n.weeklyScheduleImported.tr);
+    }
+  }
+
+  List<DropdownMenuItem<int>> _weekdayMenuItems() {
+    return List.generate(
+      7,
+      (index) => DropdownMenuItem(
+        value: index + 1,
+        child: Text(_weekdayLabel(index + 1)),
+      ),
+    );
   }
 
   Future<WeeklyScheduleEntry?> _showEntryDialog({
@@ -377,6 +565,16 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           icon: const Icon(Icons.add_rounded),
         ),
         IconButton(
+          tooltip: I18n.weeklyScheduleCopyDay.tr,
+          onPressed: _saving || _entries.isEmpty ? null : _copyDay,
+          icon: const Icon(Icons.copy_all_rounded),
+        ),
+        IconButton(
+          tooltip: I18n.weeklyScheduleImportCurrent.tr,
+          onPressed: _saving ? null : _importCurrentScheduler,
+          icon: const Icon(Icons.playlist_add_rounded),
+        ),
+        IconButton(
           tooltip: I18n.argsSaveChanges.tr,
           onPressed: _saving || !_dirty ? null : _save,
           icon: const Icon(Icons.save_rounded),
@@ -421,39 +619,78 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     final planned = _entries.map((entry) => entry.task).toSet().toList()..sort();
     final allTasks = _data!.tasks.map((task) => task.name).toSet();
     final unplanned = allTasks.difference(planned.toSet()).toList()..sort();
-    return Column(
+    return Wrap(
+      spacing: 20,
+      runSpacing: 4,
       children: [
-        ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          leading: const Icon(Icons.event_available_rounded),
-          title: Text(I18n.weeklySchedulePlanned.tr),
-          trailing: Text('${planned.length}'),
-          children: planned.map((task) {
-            final nextRun = _dirty ? null : _data!.nextRuns[task];
-            return ListTile(
-              dense: true,
-              leading: const SizedBox(width: 24),
-              title: Text(task.tr),
-              subtitle: nextRun == null ? null : Text(nextRun),
-            );
-          }).toList(),
+        _buildCoverageAction(
+          icon: Icons.event_available_rounded,
+          label: I18n.weeklySchedulePlanned.tr,
+          count: planned.length,
+          onPressed: () => _showTaskListDialog(
+            title: I18n.weeklySchedulePlanned.tr,
+            tasks: planned,
+          ),
         ),
-        ExpansionTile(
-          tilePadding: EdgeInsets.zero,
-          leading: const Icon(Icons.event_busy_rounded),
-          title: Text(I18n.weeklyScheduleUnplanned.tr),
-          trailing: Text('${unplanned.length}'),
-          children: unplanned
-              .map(
-                (task) => ListTile(
-                  dense: true,
-                  leading: const SizedBox(width: 24),
-                  title: Text(task.tr),
-                ),
-              )
-              .toList(),
+        _buildCoverageAction(
+          icon: Icons.event_busy_rounded,
+          label: I18n.weeklyScheduleUnplanned.tr,
+          count: unplanned.length,
+          onPressed: () => _showTaskListDialog(
+            title: I18n.weeklyScheduleUnplanned.tr,
+            tasks: unplanned,
+          ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCoverageAction({
+    required IconData icon,
+    required String label,
+    required int count,
+    required VoidCallback onPressed,
+  }) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon),
+      label: Text('$label  $count'),
+    );
+  }
+
+  Future<void> _showTaskListDialog({
+    required String title,
+    required List<String> tasks,
+  }) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: SizedBox(
+          width: 420,
+          height: 420,
+          child: tasks.isEmpty
+              ? Center(child: Text(I18n.weeklyScheduleEmpty.tr))
+              : ListView.builder(
+                  itemCount: tasks.length,
+                  itemBuilder: (context, index) {
+                    final task = tasks[index];
+                    final nextRun = _dirty ? null : _data!.nextRuns[task];
+                    return ListTile(
+                      dense: true,
+                      title: Text(task.tr),
+                      subtitle: nextRun == null ? null : Text(nextRun),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(I18n.confirm.tr),
+          ),
+        ],
+      ),
     );
   }
 
@@ -525,4 +762,16 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     return '${time.hour.toString().padLeft(2, '0')}:'
         '${time.minute.toString().padLeft(2, '0')}';
   }
+}
+
+class _CopyDayRequest {
+  const _CopyDayRequest({
+    required this.sourceWeekday,
+    required this.targetWeekday,
+    required this.replaceTarget,
+  });
+
+  final int sourceWeekday;
+  final int targetWeekday;
+  final bool replaceTarget;
 }

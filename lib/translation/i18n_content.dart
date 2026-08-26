@@ -192,6 +192,22 @@ class I18n {
           'weekly_schedule_reset_times',
       weeklySchedulePlanned = 'weekly_schedule_planned',
       weeklyScheduleUnplanned = 'weekly_schedule_unplanned';
+  static const String weeklyScheduleCopyDay = 'weekly_schedule_copy_day',
+      weeklyScheduleCopyDayTitle = 'weekly_schedule_copy_day_title',
+      weeklyScheduleSourceDay = 'weekly_schedule_source_day',
+      weeklyScheduleTargetDay = 'weekly_schedule_target_day';
+  static const String weeklyScheduleReplaceTarget =
+          'weekly_schedule_replace_target',
+      weeklyScheduleNoSourceEntries = 'weekly_schedule_no_source_entries',
+      weeklyScheduleDayCopied = 'weekly_schedule_day_copied';
+  static const String weeklyScheduleImportCurrent =
+          'weekly_schedule_import_current',
+      weeklyScheduleImportCurrentTitle = 'weekly_schedule_import_current_title',
+      weeklyScheduleReplaceExisting = 'weekly_schedule_replace_existing';
+  static const String weeklyScheduleNoEnabledTasks =
+          'weekly_schedule_no_enabled_tasks',
+      weeklyScheduleImported = 'weekly_schedule_imported',
+      weeklyScheduleViewTasks = 'weekly_schedule_view_tasks';
   static const String weekdayMonday = 'weekday_monday',
       weekdayTuesday = 'weekday_tuesday',
       weekdayWednesday = 'weekday_wednesday',
