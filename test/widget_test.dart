@@ -1,30 +1,24 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:oasx/main.dart';
+import 'package:oasx/modules/home/controllers/dashboard_controller.dart';
+import 'package:oasx/modules/home/models/home_workbench_layout.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const OASXApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+  test('weekly schedule is available in every workbench layout', () {
+    expect(
+      resolveHomeWorkbenchTabs(HomeWorkbenchLayoutMode.singlePane),
+      contains(HomeWorkbenchTab.weeklySchedule),
+    );
+    expect(
+      resolveHomeWorkbenchTabs(HomeWorkbenchLayoutMode.twoPane),
+      contains(HomeWorkbenchTab.weeklySchedule),
+    );
+    expect(
+      resolveHomeWorkbenchTabs(HomeWorkbenchLayoutMode.threePane),
+      contains(HomeWorkbenchTab.weeklySchedule),
+    );
+    expect(
+      isHomeWorkbenchSidebarTab(HomeWorkbenchTab.weeklySchedule),
+      isFalse,
+    );
   });
 }
