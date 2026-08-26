@@ -64,7 +64,17 @@ jobs:
 
       - name: Run tests
         shell: pwsh
-        run: flutter test
+        run: |
+          $testOutput = & flutter test --no-pub 2>&1
+          $testExitCode = $LASTEXITCODE
+          $testOutput | Write-Output
+          if ($testExitCode -ne 0) {
+            $annotation = ($testOutput | Select-Object -Last 120 | Out-String)
+            $annotation = $annotation.Replace('%', '%25')
+            $annotation = $annotation.Replace("`r", '%0D').Replace("`n", '%0A')
+            Write-Output "::error file=test,line=1::$annotation"
+            exit $testExitCode
+          }
 
       - name: Build Windows app
         shell: pwsh
