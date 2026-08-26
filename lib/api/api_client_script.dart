@@ -14,6 +14,7 @@ extension ApiClientScriptX on ApiClient {
   Future<WeeklyScheduleData?> putWeeklySchedule(
     String scriptName, {
     required bool enabled,
+    required bool catchUpMissed,
     required List<WeeklyScheduleEntry> entries,
   }) async {
     final res = await request(
@@ -21,6 +22,7 @@ extension ApiClientScriptX on ApiClient {
         '/$scriptName/weekly_schedule',
         data: {
           'enabled': enabled,
+          'catch_up_missed': catchUpMissed,
           'entries': entries.map((entry) => entry.toJson()).toList(),
         },
       ),

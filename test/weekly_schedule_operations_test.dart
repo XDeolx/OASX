@@ -76,4 +76,27 @@ void main() {
       ),
     );
   });
+
+  test('current week dates keep consecutive weekdays on consecutive dates', () {
+    const monday = WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: DateTime.monday,
+      time: '08:10',
+    );
+    const tuesday = WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: DateTime.tuesday,
+      time: '08:10',
+    );
+    final reference = DateTime(2026, 8, 26, 15);
+
+    expect(
+      weeklyScheduleCurrentWeekDateTime(monday, reference),
+      DateTime(2026, 8, 24, 8, 10),
+    );
+    expect(
+      weeklyScheduleCurrentWeekDateTime(tuesday, reference),
+      DateTime(2026, 8, 25, 8, 10),
+    );
+  });
 }

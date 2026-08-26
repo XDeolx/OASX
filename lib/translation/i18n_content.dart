@@ -208,6 +208,13 @@ class I18n {
           'weekly_schedule_no_enabled_tasks',
       weeklyScheduleImported = 'weekly_schedule_imported',
       weeklyScheduleViewTasks = 'weekly_schedule_view_tasks';
+  static const String weeklyScheduleCatchUpMissed =
+          'weekly_schedule_catch_up_missed',
+      weeklyScheduleCurrentTime = 'weekly_schedule_current_time',
+      weeklyScheduleCurrentWeek = 'weekly_schedule_current_week';
+  static const String weeklyScheduleLastSynced =
+          'weekly_schedule_last_synced',
+      weeklyScheduleNotSynced = 'weekly_schedule_not_synced';
   static const String weekdayMonday = 'weekday_monday',
       weekdayTuesday = 'weekday_tuesday',
       weekdayWednesday = 'weekday_wednesday',

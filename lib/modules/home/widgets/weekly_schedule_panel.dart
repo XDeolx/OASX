@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:oasx/api/api_client.dart';
@@ -23,10 +25,13 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   WeeklyScheduleData? _data;
   List<WeeklyScheduleEntry> _entries = [];
   bool _enabled = true;
+  bool _catchUpMissed = false;
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
   int _selectedWeekday = 0;
+  DateTime _now = DateTime.now();
+  Timer? _clockTimer;
 
   @override
   void initState() {
@@ -38,8 +43,27 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _data = initialData;
       _entries = List<WeeklyScheduleEntry>.from(initialData.entries);
       _enabled = initialData.enabled;
+      _catchUpMissed = initialData.catchUpMissed;
       _loading = false;
     }
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) {
+        return;
+      }
+      final previousDate = DateTime(_now.year, _now.month, _now.day);
+      final nextNow = DateTime.now();
+      final nextDate = DateTime(nextNow.year, nextNow.month, nextNow.day);
+      setState(() => _now = nextNow);
+      if (nextDate != previousDate) {
+        _load();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -68,13 +92,18 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   void _useData(WeeklyScheduleData data) {
+    final serverNow = DateTime.tryParse(data.serverNow);
     setState(() {
       _data = data;
       _entries = List<WeeklyScheduleEntry>.from(data.entries);
       _enabled = data.enabled;
+      _catchUpMissed = data.catchUpMissed;
       _loading = false;
       _saving = false;
       _dirty = false;
+      if (serverNow != null) {
+        _now = serverNow;
+      }
     });
   }
 
@@ -83,6 +112,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     final data = await ApiClient().putWeeklySchedule(
       widget.scriptName,
       enabled: _enabled,
+      catchUpMissed: _catchUpMissed,
       entries: _entries,
     );
     if (!mounted) {
@@ -152,6 +182,17 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   Future<void> _setEnabled(bool value) async {
     setState(() {
       _enabled = value;
+      _dirty = true;
+    });
+    final data = await _save(notify: false);
+    if (value && data != null) {
+      await _apply();
+    }
+  }
+
+  Future<void> _setCatchUpMissed(bool value) async {
+    setState(() {
+      _catchUpMissed = value;
       _dirty = true;
     });
     await _save(notify: false);
@@ -489,6 +530,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildToolbar(),
+        const SizedBox(height: 6),
+        _buildTimeStatus(),
         const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -532,20 +575,27 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Widget _buildToolbar() {
-    final status = Row(
-      mainAxisSize: MainAxisSize.min,
+    final status = Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 4,
       children: [
         Switch(
           value: _enabled,
           onChanged: _saving ? null : _setEnabled,
         ),
-        Flexible(
-          child: Text(
-            _enabled
-                ? I18n.weeklyScheduleEnabled.tr
-                : I18n.weeklyScheduleDisabled.tr,
-          ),
+        Text(
+          _enabled
+              ? I18n.weeklyScheduleEnabled.tr
+              : I18n.weeklyScheduleDisabled.tr,
         ),
+        const SizedBox(width: 8),
+        Checkbox(
+          value: _catchUpMissed,
+          onChanged: _saving
+              ? null
+              : (value) => _setCatchUpMissed(value ?? false),
+        ),
+        Text(I18n.weeklyScheduleCatchUpMissed.tr),
         if (_dirty)
           Padding(
             padding: const EdgeInsets.only(left: 8),
@@ -612,6 +662,43 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           children: [Expanded(child: status), actions],
         );
       },
+    );
+  }
+
+  Widget _buildTimeStatus() {
+    final data = _data!;
+    final lastApplied = data.lastAppliedAt.isEmpty
+        ? I18n.weeklyScheduleNotSynced.tr
+        : data.lastAppliedAt;
+    return Wrap(
+      spacing: 18,
+      runSpacing: 4,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _buildStatusText(
+          Icons.schedule_rounded,
+          '${I18n.weeklyScheduleCurrentTime.tr}: ${_formatDateTime(_now)}',
+        ),
+        _buildStatusText(
+          Icons.date_range_rounded,
+          '${I18n.weeklyScheduleCurrentWeek.tr}: ${data.currentWeekStart}',
+        ),
+        _buildStatusText(
+          Icons.update_rounded,
+          '${I18n.weeklyScheduleLastSynced.tr}: $lastApplied',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusText(IconData icon, String text) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 5),
+        Text(text, style: Theme.of(context).textTheme.bodySmall),
+      ],
     );
   }
 
@@ -721,9 +808,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         ),
       ),
       title: Text(entry.task.tr),
-      subtitle: _dirty || _data!.nextRuns[entry.task] == null
-          ? null
-          : Text(_data!.nextRuns[entry.task]!),
+      subtitle: Text(_entryScheduledAt(entry)),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -768,6 +853,29 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   String _formatTime(TimeOfDay time) {
     return '${time.hour.toString().padLeft(2, '0')}:'
         '${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _entryScheduledAt(WeeklyScheduleEntry entry) {
+    if (entry.scheduledAt.isNotEmpty) {
+      return entry.scheduledAt;
+    }
+    final scheduledAt = weeklyScheduleCurrentWeekDateTime(
+      entry,
+      DateTime.now(),
+    );
+    return '${scheduledAt.year.toString().padLeft(4, '0')}-'
+        '${scheduledAt.month.toString().padLeft(2, '0')}-'
+        '${scheduledAt.day.toString().padLeft(2, '0')} '
+        '${entry.time}:00';
+  }
+
+  String _formatDateTime(DateTime value) {
+    return '${value.year.toString().padLeft(4, '0')}-'
+        '${value.month.toString().padLeft(2, '0')}-'
+        '${value.day.toString().padLeft(2, '0')} '
+        '${value.hour.toString().padLeft(2, '0')}:'
+        '${value.minute.toString().padLeft(2, '0')}:'
+        '${value.second.toString().padLeft(2, '0')}';
   }
 }
 

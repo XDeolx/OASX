@@ -25,17 +25,35 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('09:00'), findsNWidgets(3));
+    expect(find.text('2026-08-24 09:00:00'), findsOneWidget);
+    expect(find.text('2026-08-26 09:00:00'), findsNWidgets(2));
     expect(find.byIcon(Icons.event_available_rounded), findsOneWidget);
     expect(find.byIcon(Icons.event_busy_rounded), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 
 const _populatedData = WeeklyScheduleData(
   enabled: false,
   entries: [
-    WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '09:00'),
-    WeeklyScheduleEntry(task: 'AreaBoss', weekday: 3, time: '09:00'),
-    WeeklyScheduleEntry(task: 'Restart', weekday: 3, time: '09:00'),
+    WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: 1,
+      time: '09:00',
+      scheduledAt: '2026-08-24 09:00:00',
+    ),
+    WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: 3,
+      time: '09:00',
+      scheduledAt: '2026-08-26 09:00:00',
+    ),
+    WeeklyScheduleEntry(
+      task: 'Restart',
+      weekday: 3,
+      time: '09:00',
+      scheduledAt: '2026-08-26 09:00:00',
+    ),
   ],
   tasks: [
     WeeklyScheduleTask(
@@ -57,4 +75,7 @@ const _populatedData = WeeklyScheduleData(
   plannedTasks: ['AreaBoss', 'Restart'],
   unplannedTasks: ['Guild'],
   nextRuns: {},
+  serverNow: '2026-08-26 15:00:00',
+  currentWeekStart: '2026-08-24',
+  todayWeekday: DateTime.wednesday,
 );

@@ -65,3 +65,22 @@ List<WeeklyScheduleEntry> normalizeWeeklyScheduleEntries(
   });
   return result;
 }
+
+DateTime weeklyScheduleCurrentWeekDateTime(
+  WeeklyScheduleEntry entry,
+  DateTime reference,
+) {
+  final referenceDay = DateTime(reference.year, reference.month, reference.day);
+  final weekStart = referenceDay.subtract(
+    Duration(days: reference.weekday - DateTime.monday),
+  );
+  final runDate = weekStart.add(Duration(days: entry.weekday - 1));
+  final parts = entry.time.split(':');
+  return DateTime(
+    runDate.year,
+    runDate.month,
+    runDate.day,
+    int.tryParse(parts.first) ?? 0,
+    parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+  );
+}

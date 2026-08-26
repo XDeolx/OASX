@@ -3,17 +3,20 @@ class WeeklyScheduleEntry {
     required this.task,
     required this.weekday,
     required this.time,
+    this.scheduledAt = '',
   });
 
   final String task;
   final int weekday;
   final String time;
+  final String scheduledAt;
 
   factory WeeklyScheduleEntry.fromJson(Map<String, dynamic> json) {
     return WeeklyScheduleEntry(
       task: json['task']?.toString() ?? '',
       weekday: int.tryParse(json['weekday']?.toString() ?? '') ?? 1,
       time: json['time']?.toString() ?? '00:00',
+      scheduledAt: json['scheduled_at']?.toString() ?? '',
     );
   }
 
@@ -52,23 +55,41 @@ class WeeklyScheduleData {
     required this.plannedTasks,
     required this.unplannedTasks,
     required this.nextRuns,
+    this.catchUpMissed = false,
+    this.lastAppliedDate = '',
+    this.lastAppliedAt = '',
+    this.serverNow = '',
+    this.currentWeekStart = '',
+    this.todayWeekday = 1,
   });
 
   final bool enabled;
+  final bool catchUpMissed;
   final List<WeeklyScheduleEntry> entries;
   final List<WeeklyScheduleTask> tasks;
   final List<String> plannedTasks;
   final List<String> unplannedTasks;
   final Map<String, String> nextRuns;
+  final String lastAppliedDate;
+  final String lastAppliedAt;
+  final String serverNow;
+  final String currentWeekStart;
+  final int todayWeekday;
 
   factory WeeklyScheduleData.fromJson(Map<String, dynamic> json) {
     return WeeklyScheduleData(
       enabled: json['enabled'] != false,
+      catchUpMissed: json['catch_up_missed'] == true,
       entries: _mapList(json['entries'], WeeklyScheduleEntry.fromJson),
       tasks: _mapList(json['tasks'], WeeklyScheduleTask.fromJson),
       plannedTasks: _stringList(json['planned_tasks']),
       unplannedTasks: _stringList(json['unplanned_tasks']),
       nextRuns: _stringMap(json['next_runs']),
+      lastAppliedDate: json['last_applied_date']?.toString() ?? '',
+      lastAppliedAt: json['last_applied_at']?.toString() ?? '',
+      serverNow: json['server_now']?.toString() ?? '',
+      currentWeekStart: json['current_week_start']?.toString() ?? '',
+      todayWeekday: int.tryParse(json['today_weekday']?.toString() ?? '') ?? 1,
     );
   }
 }
