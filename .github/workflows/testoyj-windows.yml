@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - testoyj
+    tags:
+      - "testoyj-v*"
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   FLUTTER_VERSION: "3.35.1"
@@ -78,9 +80,18 @@ jobs:
 
       - name: Build Windows app
         shell: pwsh
-        run: flutter build windows --release
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and
+              $env:GITHUB_REF_NAME -match '^testoyj-v(\d+\.\d+\.\d+)\.(\d+)$') {
+            flutter build windows --release `
+              --build-name $Matches[1] `
+              --build-number $Matches[2]
+          } else {
+            flutter build windows --release
+          }
 
       - name: Package Windows build
+        id: package
         shell: pwsh
         run: |
           $releasePath = Join-Path $env:GITHUB_WORKSPACE 'build/windows/x64/runner/Release'
@@ -90,15 +101,38 @@ jobs:
           if (!(Test-Path $releasePath)) {
             throw "Windows release directory not found"
           }
+          $versionLabel = if ($env:GITHUB_REF_TYPE -eq 'tag') {
+            $env:GITHUB_REF_NAME
+          } else {
+            'testoyj'
+          }
+          $assetName = "oasx_${versionLabel}_windows.zip"
+          $assetPath = Join-Path $env:GITHUB_WORKSPACE $assetName
           Compress-Archive `
             -Path (Join-Path $releasePath '*') `
-            -DestinationPath (Join-Path $env:GITHUB_WORKSPACE 'oasx_testoyj_windows.zip') `
+            -DestinationPath $assetPath `
             -Force
+          "asset_name=$assetName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "asset_path=$assetPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Upload Windows test package
         uses: actions/upload-artifact@v4
         with:
-          name: oasx_testoyj_windows
-          path: oasx_testoyj_windows.zip
+          name: ${{ steps.package.outputs.asset_name }}
+          path: ${{ steps.package.outputs.asset_path }}
           if-no-files-found: error
           retention-days: 14
+
+      - name: Create testoyj GitHub Release
+        if: startsWith(github.ref, 'refs/tags/testoyj-v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^testoyj-v', ''
+          gh release create $env:GITHUB_REF_NAME `
+            '${{ steps.package.outputs.asset_path }}' `
+            --repo $env:GITHUB_REPOSITORY `
+            --verify-tag `
+            --title "OASX testoyj v$version" `
+            --notes-file TESTOYJ_CHANGELOG.md

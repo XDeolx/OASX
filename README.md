@@ -4,6 +4,8 @@ OASX 是面向 OAS 的 Flutter GUI 客户端，负责提供连接配置、本地
 
 本仓库聚焦前端与桌面端交互体验，不包含 OAS 服务端本体；你可以把它理解为 OAS 的跨平台图形控制台。
 
+[`testoyj` 更新日志](./TESTOYJ_CHANGELOG.md) | [版本发布](https://github.com/zHydeol/OASX/releases)
+
 ## 项目概览
 
 - 基于 Flutter + Dart 构建，采用 GetX 进行路由、依赖注入和状态管理
@@ -51,11 +53,13 @@ OASX 是面向 OAS 的 Flutter GUI 客户端，负责提供连接配置、本地
 - macOS
 - iOS
 
-当前仓库内置的 GitHub Actions 发布链路明确覆盖：
+上游仓库内置的 GitHub Actions 发布链路覆盖：
 
 - Windows
 - Android
 - Web ([点击前往OASX](https://azurtian.github.io/OASX))
+
+`testoyj` 分支当前只发布 Windows 版本，不部署独立 Web 版本。
 
 ## 快速开始
 
