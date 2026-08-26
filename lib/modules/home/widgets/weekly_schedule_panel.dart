@@ -703,13 +703,20 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         width: 72,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               entry.time,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.titleMedium,
             ),
-            Text(_weekdayLabel(entry.weekday, short: true)),
+            Text(
+              _weekdayLabel(entry.weekday, short: true),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
       ),
