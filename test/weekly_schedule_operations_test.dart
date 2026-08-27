@@ -3,6 +3,17 @@ import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_operations.dart';
 
 void main() {
+  test('weekly schedule model reads turtle mode settings', () {
+    final data = WeeklyScheduleData.fromJson({
+      'enabled': true,
+      'turtle_mode': true,
+      'turtle_keep_tasks': ['AreaBoss', 'KekkaiUtilize'],
+    });
+
+    expect(data.turtleMode, isTrue);
+    expect(data.turtleKeepTasks, ['AreaBoss', 'KekkaiUtilize']);
+  });
+
   test('copy weekday replaces target and keeps other weekdays', () {
     const entries = [
       WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '09:00'),

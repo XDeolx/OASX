@@ -15,6 +15,8 @@ extension ApiClientScriptX on ApiClient {
     String scriptName, {
     required bool enabled,
     required bool catchUpMissed,
+    required bool turtleMode,
+    required List<String> turtleKeepTasks,
     required List<WeeklyScheduleEntry> entries,
   }) async {
     final res = await request(
@@ -23,6 +25,8 @@ extension ApiClientScriptX on ApiClient {
         data: {
           'enabled': enabled,
           'catch_up_missed': catchUpMissed,
+          'turtle_mode': turtleMode,
+          'turtle_keep_tasks': turtleKeepTasks,
           'entries': entries.map((entry) => entry.toJson()).toList(),
         },
       ),

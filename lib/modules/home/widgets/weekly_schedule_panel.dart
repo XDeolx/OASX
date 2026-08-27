@@ -26,6 +26,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   List<WeeklyScheduleEntry> _entries = [];
   bool _enabled = true;
   bool _catchUpMissed = false;
+  bool _turtleMode = false;
+  Set<String> _turtleKeepTasks = {};
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
@@ -44,6 +46,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _entries = List<WeeklyScheduleEntry>.from(initialData.entries);
       _enabled = initialData.enabled;
       _catchUpMissed = initialData.catchUpMissed;
+      _turtleMode = initialData.turtleMode;
+      _turtleKeepTasks = initialData.turtleKeepTasks.toSet();
       _loading = false;
     }
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -98,6 +102,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _entries = List<WeeklyScheduleEntry>.from(data.entries);
       _enabled = data.enabled;
       _catchUpMissed = data.catchUpMissed;
+      _turtleMode = data.turtleMode;
+      _turtleKeepTasks = data.turtleKeepTasks.toSet();
       _loading = false;
       _saving = false;
       _dirty = false;
@@ -113,6 +119,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       widget.scriptName,
       enabled: _enabled,
       catchUpMissed: _catchUpMissed,
+      turtleMode: _turtleMode,
+      turtleKeepTasks: _turtleKeepTasks.toList()..sort(),
       entries: _entries,
     );
     if (!mounted) {
@@ -130,8 +138,8 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     return data;
   }
 
-  Future<void> _apply() async {
-    if (_saving || !_enabled || _entries.isEmpty) {
+  Future<void> _apply({bool allowDisabled = false}) async {
+    if (_saving || (!allowDisabled && (!_enabled || _entries.isEmpty))) {
       return;
     }
     if (_dirty && await _save(notify: false) == null) {
@@ -180,14 +188,114 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Future<void> _setEnabled(bool value) async {
+    final restoreTurtleTasks = !value && _turtleMode;
     setState(() {
       _enabled = value;
+      if (restoreTurtleTasks) {
+        _turtleMode = false;
+      }
       _dirty = true;
     });
     final data = await _save(notify: false);
     if (value && data != null) {
       await _apply();
+    } else if (restoreTurtleTasks && data != null) {
+      await _apply(allowDisabled: true);
     }
+  }
+
+  Future<void> _setTurtleMode(bool value) async {
+    if (value) {
+      final selected = await _showTurtleTasksDialog();
+      if (selected == null || !mounted) {
+        return;
+      }
+      setState(() {
+        _turtleMode = true;
+        _turtleKeepTasks = selected;
+        _dirty = true;
+      });
+    } else {
+      setState(() {
+        _turtleMode = false;
+        _dirty = true;
+      });
+    }
+    final data = await _save(notify: false);
+    if (data != null) {
+      await _apply(allowDisabled: !value);
+    }
+  }
+
+  Future<void> _editTurtleTasks() async {
+    final selected = await _showTurtleTasksDialog();
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _turtleKeepTasks = selected;
+      _dirty = true;
+    });
+    final data = await _save(notify: false);
+    if (data != null && _turtleMode) {
+      await _apply();
+    }
+  }
+
+  Future<Set<String>?> _showTurtleTasksDialog() {
+    final tasks = _data!.tasks.map((task) => task.name).toList()..sort();
+    final defaults = {'KekkaiUtilize', 'KekkaiActivation', 'AreaBoss'};
+    final selected = _turtleKeepTasks.isNotEmpty
+        ? Set<String>.from(_turtleKeepTasks)
+        : tasks.where(defaults.contains).toSet();
+    if (selected.isEmpty && tasks.isNotEmpty) {
+      selected.add(tasks.first);
+    }
+    return showDialog<Set<String>>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(I18n.weeklyScheduleTurtleSelectTitle.tr),
+          content: SizedBox(
+            width: 420,
+            height: 420,
+            child: ListView.builder(
+              itemCount: tasks.length,
+              itemBuilder: (context, index) {
+                final task = tasks[index];
+                return CheckboxListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  value: selected.contains(task),
+                  title: Text(task.tr),
+                  onChanged: (value) {
+                    setDialogState(() {
+                      if (value == true) {
+                        selected.add(task);
+                      } else {
+                        selected.remove(task);
+                      }
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(I18n.cancel.tr),
+            ),
+            FilledButton(
+              onPressed: selected.isEmpty
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(selected),
+              child: Text(I18n.confirm.tr),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _setCatchUpMissed(bool value) async {
@@ -383,7 +491,11 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   Future<WeeklyScheduleEntry?> _showEntryDialog({
     WeeklyScheduleEntry? initial,
   }) async {
-    final tasks = _data?.tasks.map((task) => task.name).toList() ?? [];
+    final tasks = _data?.tasks
+            .map((task) => task.name)
+            .where((task) => !_turtleMode || _turtleKeepTasks.contains(task))
+            .toList() ??
+        [];
     if (tasks.isEmpty) {
       return null;
     }
@@ -522,8 +634,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         .entries
         .where(
           (item) =>
-              _selectedWeekday == 0 ||
-              item.value.weekday == _selectedWeekday,
+              (!_turtleMode || _turtleKeepTasks.contains(item.value.task)) &&
+              (_selectedWeekday == 0 ||
+                  item.value.weekday == _selectedWeekday),
         )
         .toList();
     return Column(
@@ -596,6 +709,17 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
               : (value) => _setCatchUpMissed(value ?? false),
         ),
         Text(I18n.weeklyScheduleCatchUpMissed.tr),
+        const SizedBox(width: 8),
+        Switch(
+          value: _turtleMode,
+          onChanged: _saving || !_enabled ? null : _setTurtleMode,
+        ),
+        Text(I18n.weeklyScheduleTurtleMode.tr),
+        IconButton(
+          tooltip: I18n.weeklyScheduleTurtleSelect.tr,
+          onPressed: _saving || !_enabled ? null : _editTurtleTasks,
+          icon: const Icon(Icons.shield_rounded),
+        ),
         if (_dirty)
           Padding(
             padding: const EdgeInsets.only(left: 8),
@@ -713,9 +837,31 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Widget _buildCoverage() {
-    final planned = _entries.map((entry) => entry.task).toSet().toList()..sort();
-    final allTasks = _data!.tasks.map((task) => task.name).toSet();
+    final visibleEntries = _entries.where(
+      (entry) => !_turtleMode || _turtleKeepTasks.contains(entry.task),
+    );
+    final planned = visibleEntries.map((entry) => entry.task).toSet().toList()
+      ..sort();
+    final allTasks = _turtleMode
+        ? Set<String>.from(_turtleKeepTasks)
+        : _data!.tasks.map((task) => task.name).toSet();
     final unplanned = allTasks.difference(planned.toSet()).toList()..sort();
+    if (_turtleMode) {
+      final retained = allTasks.toList()..sort();
+      return Wrap(
+        children: [
+          _buildCoverageAction(
+            icon: Icons.shield_rounded,
+            label: I18n.weeklyScheduleTurtleKeep.tr,
+            count: retained.length,
+            onPressed: () => _showTaskListDialog(
+              title: I18n.weeklyScheduleTurtleSelectTitle.tr,
+              tasks: retained,
+            ),
+          ),
+        ],
+      );
+    }
     return Wrap(
       spacing: 20,
       runSpacing: 4,

@@ -215,6 +215,13 @@ class I18n {
   static const String weeklyScheduleLastSynced =
           'weekly_schedule_last_synced',
       weeklyScheduleNotSynced = 'weekly_schedule_not_synced';
+  static const String weeklyScheduleTurtleMode =
+          'weekly_schedule_turtle_mode',
+      weeklyScheduleTurtleSelect = 'weekly_schedule_turtle_select',
+      weeklyScheduleTurtleSelectTitle = 'weekly_schedule_turtle_select_title';
+  static const String weeklyScheduleTurtleKeep =
+          'weekly_schedule_turtle_keep',
+      weeklyScheduleTurtleEmpty = 'weekly_schedule_turtle_empty';
   static const String weekdayMonday = 'weekday_monday',
       weekdayTuesday = 'weekday_tuesday',
       weekdayWednesday = 'weekday_wednesday',

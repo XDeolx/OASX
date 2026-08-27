@@ -31,6 +31,31 @@ void main() {
     expect(find.byIcon(Icons.event_busy_rounded), findsOneWidget);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('turtle mode hides schedule entries outside retained tasks', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(700, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: Scaffold(
+          body: WeeklySchedulePanel(
+            scriptName: 'test',
+            initialData: _turtleData,
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('AreaBoss'), findsNWidgets(2));
+    expect(find.text('Restart'), findsNothing);
+    expect(find.byIcon(Icons.shield_rounded), findsNWidgets(2));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }
 
 const _populatedData = WeeklyScheduleData(
@@ -74,6 +99,50 @@ const _populatedData = WeeklyScheduleData(
   ],
   plannedTasks: ['AreaBoss', 'Restart'],
   unplannedTasks: ['Guild'],
+  nextRuns: {},
+  serverNow: '2026-08-26 15:00:00',
+  currentWeekStart: '2026-08-24',
+  todayWeekday: DateTime.wednesday,
+);
+
+const _turtleData = WeeklyScheduleData(
+  enabled: true,
+  turtleMode: true,
+  turtleKeepTasks: ['AreaBoss'],
+  entries: [
+    WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: 1,
+      time: '09:00',
+      scheduledAt: '2026-08-24 09:00:00',
+    ),
+    WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: 3,
+      time: '09:00',
+      scheduledAt: '2026-08-26 09:00:00',
+    ),
+    WeeklyScheduleEntry(
+      task: 'Restart',
+      weekday: 3,
+      time: '09:00',
+      scheduledAt: '2026-08-26 09:00:00',
+    ),
+  ],
+  tasks: [
+    WeeklyScheduleTask(
+      name: 'AreaBoss',
+      enabled: true,
+      nextRun: '2026-08-31 09:00:00',
+    ),
+    WeeklyScheduleTask(
+      name: 'Restart',
+      enabled: false,
+      nextRun: '2026-08-26 09:00:00',
+    ),
+  ],
+  plannedTasks: ['AreaBoss', 'Restart'],
+  unplannedTasks: [],
   nextRuns: {},
   serverNow: '2026-08-26 15:00:00',
   currentWeekStart: '2026-08-24',

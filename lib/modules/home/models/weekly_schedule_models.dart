@@ -56,6 +56,8 @@ class WeeklyScheduleData {
     required this.unplannedTasks,
     required this.nextRuns,
     this.catchUpMissed = false,
+    this.turtleMode = false,
+    this.turtleKeepTasks = const [],
     this.lastAppliedDate = '',
     this.lastAppliedAt = '',
     this.serverNow = '',
@@ -65,6 +67,8 @@ class WeeklyScheduleData {
 
   final bool enabled;
   final bool catchUpMissed;
+  final bool turtleMode;
+  final List<String> turtleKeepTasks;
   final List<WeeklyScheduleEntry> entries;
   final List<WeeklyScheduleTask> tasks;
   final List<String> plannedTasks;
@@ -80,6 +84,8 @@ class WeeklyScheduleData {
     return WeeklyScheduleData(
       enabled: json['enabled'] != false,
       catchUpMissed: json['catch_up_missed'] == true,
+      turtleMode: json['turtle_mode'] == true,
+      turtleKeepTasks: _stringList(json['turtle_keep_tasks']),
       entries: _mapList(json['entries'], WeeklyScheduleEntry.fromJson),
       tasks: _mapList(json['tasks'], WeeklyScheduleTask.fromJson),
       plannedTasks: _stringList(json['planned_tasks']),
