@@ -3,15 +3,28 @@ import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_operations.dart';
 
 void main() {
-  test('weekly schedule model reads turtle mode settings', () {
+  test('weekly schedule model reads turtle and free-cycle settings', () {
     final data = WeeklyScheduleData.fromJson({
       'enabled': true,
       'turtle_mode': true,
       'turtle_keep_tasks': ['AreaBoss', 'KekkaiUtilize'],
+      'free_cycle_tasks': ['KekkaiActivation'],
     });
 
     expect(data.turtleMode, isTrue);
     expect(data.turtleKeepTasks, ['AreaBoss', 'KekkaiUtilize']);
+    expect(data.freeCycleTasks, ['KekkaiActivation']);
+  });
+
+  test('free-cycle defaults are used only when the field is absent', () {
+    final legacy = WeeklyScheduleData.fromJson({'enabled': true});
+    final cleared = WeeklyScheduleData.fromJson({
+      'enabled': true,
+      'free_cycle_tasks': <String>[],
+    });
+
+    expect(legacy.freeCycleTasks, weeklyScheduleDefaultFreeCycleTasks);
+    expect(cleared.freeCycleTasks, isEmpty);
   });
 
   test('copy weekday replaces target and keeps other weekdays', () {

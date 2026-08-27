@@ -54,6 +54,18 @@ void main() {
     expect(find.text('AreaBoss'), findsNWidgets(2));
     expect(find.text('Restart'), findsNothing);
     expect(find.byIcon(Icons.shield_rounded), findsNWidgets(2));
+    final shieldIcons = tester.widgetList<Icon>(
+      find.byIcon(Icons.shield_rounded),
+    );
+    expect(shieldIcons.every((icon) => icon.color == Colors.lightBlue), isTrue);
+    expect(find.byIcon(Icons.autorenew_rounded), findsNWidgets(2));
+    final freeCycleIcons = tester.widgetList<Icon>(
+      find.byIcon(Icons.autorenew_rounded),
+    );
+    expect(
+      freeCycleIcons.every((icon) => icon.color == Colors.lightBlue),
+      isTrue,
+    );
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

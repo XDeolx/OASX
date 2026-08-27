@@ -28,6 +28,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   bool _catchUpMissed = false;
   bool _turtleMode = false;
   Set<String> _turtleKeepTasks = {};
+  Set<String> _freeCycleTasks = Set<String>.from(
+    weeklyScheduleDefaultFreeCycleTasks,
+  );
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
@@ -48,6 +51,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _catchUpMissed = initialData.catchUpMissed;
       _turtleMode = initialData.turtleMode;
       _turtleKeepTasks = initialData.turtleKeepTasks.toSet();
+      _freeCycleTasks = initialData.freeCycleTasks.toSet();
       _loading = false;
     }
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -104,6 +108,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _catchUpMissed = data.catchUpMissed;
       _turtleMode = data.turtleMode;
       _turtleKeepTasks = data.turtleKeepTasks.toSet();
+      _freeCycleTasks = data.freeCycleTasks.toSet();
       _loading = false;
       _saving = false;
       _dirty = false;
@@ -121,6 +126,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       catchUpMissed: _catchUpMissed,
       turtleMode: _turtleMode,
       turtleKeepTasks: _turtleKeepTasks.toList()..sort(),
+      freeCycleTasks: _freeCycleTasks.toList()..sort(),
       entries: _entries,
     );
     if (!mounted) {
@@ -138,7 +144,10 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     return data;
   }
 
-  Future<void> _apply({bool allowDisabled = false}) async {
+  Future<void> _apply({
+    bool allowDisabled = false,
+    bool preserveExistingTimes = false,
+  }) async {
     if (_saving || (!allowDisabled && (!_enabled || _entries.isEmpty))) {
       return;
     }
@@ -146,7 +155,10 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       return;
     }
     setState(() => _saving = true);
-    final data = await ApiClient().applyWeeklySchedule(widget.scriptName);
+    final data = await ApiClient().applyWeeklySchedule(
+      widget.scriptName,
+      preserveExistingTimes: preserveExistingTimes,
+    );
     if (!mounted) {
       return;
     }
@@ -200,7 +212,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     if (value && data != null) {
       await _apply();
     } else if (restoreTurtleTasks && data != null) {
-      await _apply(allowDisabled: true);
+      await _apply(allowDisabled: true, preserveExistingTimes: true);
     }
   }
 
@@ -223,7 +235,10 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     }
     final data = await _save(notify: false);
     if (data != null) {
-      await _apply(allowDisabled: !value);
+      await _apply(
+        allowDisabled: !value,
+        preserveExistingTimes: true,
+      );
     }
   }
 
@@ -238,7 +253,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     });
     final data = await _save(notify: false);
     if (data != null && _turtleMode) {
-      await _apply();
+      await _apply(preserveExistingTimes: true);
     }
   }
 
@@ -251,11 +266,43 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     if (selected.isEmpty && tasks.isNotEmpty) {
       selected.add(tasks.first);
     }
+    return _showTaskSelectionDialog(
+      tasks: tasks,
+      selected: selected,
+      title: I18n.weeklyScheduleTurtleSelectTitle.tr,
+      requireSelection: true,
+    );
+  }
+
+  Future<void> _editFreeCycleTasks() async {
+    final tasks = _data!.tasks.map((task) => task.name).toList()..sort();
+    final selected = await _showTaskSelectionDialog(
+      tasks: tasks,
+      selected: _freeCycleTasks,
+      title: I18n.weeklyScheduleFreeCycleSelectTitle.tr,
+    );
+    if (selected == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _freeCycleTasks = selected;
+      _dirty = true;
+    });
+    await _save(notify: false);
+  }
+
+  Future<Set<String>?> _showTaskSelectionDialog({
+    required List<String> tasks,
+    required Set<String> selected,
+    required String title,
+    bool requireSelection = false,
+  }) {
+    final dialogSelection = Set<String>.from(selected);
     return showDialog<Set<String>>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(I18n.weeklyScheduleTurtleSelectTitle.tr),
+          title: Text(title),
           content: SizedBox(
             width: 420,
             height: 420,
@@ -266,14 +313,14 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
                 return CheckboxListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  value: selected.contains(task),
+                  value: dialogSelection.contains(task),
                   title: Text(task.tr),
                   onChanged: (value) {
                     setDialogState(() {
                       if (value == true) {
-                        selected.add(task);
+                        dialogSelection.add(task);
                       } else {
-                        selected.remove(task);
+                        dialogSelection.remove(task);
                       }
                     });
                   },
@@ -287,9 +334,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
               child: Text(I18n.cancel.tr),
             ),
             FilledButton(
-              onPressed: selected.isEmpty
+              onPressed: requireSelection && dialogSelection.isEmpty
                   ? null
-                  : () => Navigator.of(dialogContext).pop(selected),
+                  : () => Navigator.of(dialogContext).pop(dialogSelection),
               child: Text(I18n.confirm.tr),
             ),
           ],
@@ -718,7 +765,20 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         IconButton(
           tooltip: I18n.weeklyScheduleTurtleSelect.tr,
           onPressed: _saving || !_enabled ? null : _editTurtleTasks,
-          icon: const Icon(Icons.shield_rounded),
+          icon: Icon(
+            Icons.shield_rounded,
+            color: _turtleMode ? Colors.lightBlue : null,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(I18n.weeklyScheduleFreeCycle.tr),
+        IconButton(
+          tooltip: I18n.weeklyScheduleFreeCycleSelect.tr,
+          onPressed: _saving || !_enabled ? null : _editFreeCycleTasks,
+          icon: Icon(
+            Icons.autorenew_rounded,
+            color: _freeCycleTasks.isNotEmpty ? Colors.lightBlue : null,
+          ),
         ),
         if (_dirty)
           Padding(
@@ -846,18 +906,29 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         ? Set<String>.from(_turtleKeepTasks)
         : _data!.tasks.map((task) => task.name).toSet();
     final unplanned = allTasks.difference(planned.toSet()).toList()..sort();
+    final freeCycle = _freeCycleTasks.toList()..sort();
     if (_turtleMode) {
       final retained = allTasks.toList()..sort();
       return Wrap(
+        spacing: 20,
+        runSpacing: 4,
         children: [
           _buildCoverageAction(
             icon: Icons.shield_rounded,
+            iconColor: Colors.lightBlue,
             label: I18n.weeklyScheduleTurtleKeep.tr,
             count: retained.length,
             onPressed: () => _showTaskListDialog(
               title: I18n.weeklyScheduleTurtleSelectTitle.tr,
               tasks: retained,
             ),
+          ),
+          _buildCoverageAction(
+            icon: Icons.autorenew_rounded,
+            iconColor: _freeCycleTasks.isNotEmpty ? Colors.lightBlue : null,
+            label: I18n.weeklyScheduleFreeCycle.tr,
+            count: freeCycle.length,
+            onPressed: _editFreeCycleTasks,
           ),
         ],
       );
@@ -884,19 +955,27 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
             tasks: unplanned,
           ),
         ),
+        _buildCoverageAction(
+          icon: Icons.autorenew_rounded,
+          iconColor: _freeCycleTasks.isNotEmpty ? Colors.lightBlue : null,
+          label: I18n.weeklyScheduleFreeCycle.tr,
+          count: freeCycle.length,
+          onPressed: _editFreeCycleTasks,
+        ),
       ],
     );
   }
 
   Widget _buildCoverageAction({
     required IconData icon,
+    Color? iconColor,
     required String label,
     required int count,
     required VoidCallback onPressed,
   }) {
     return TextButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon),
+      icon: Icon(icon, color: iconColor),
       label: Text('$label  $count'),
     );
   }

@@ -222,6 +222,10 @@ class I18n {
   static const String weeklyScheduleTurtleKeep =
           'weekly_schedule_turtle_keep',
       weeklyScheduleTurtleEmpty = 'weekly_schedule_turtle_empty';
+  static const String weeklyScheduleFreeCycle = 'weekly_schedule_free_cycle',
+      weeklyScheduleFreeCycleSelect = 'weekly_schedule_free_cycle_select',
+      weeklyScheduleFreeCycleSelectTitle =
+          'weekly_schedule_free_cycle_select_title';
   static const String weekdayMonday = 'weekday_monday',
       weekdayTuesday = 'weekday_tuesday',
       weekdayWednesday = 'weekday_wednesday',

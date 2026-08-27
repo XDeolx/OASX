@@ -17,6 +17,7 @@ extension ApiClientScriptX on ApiClient {
     required bool catchUpMissed,
     required bool turtleMode,
     required List<String> turtleKeepTasks,
+    required List<String> freeCycleTasks,
     required List<WeeklyScheduleEntry> entries,
   }) async {
     final res = await request(
@@ -27,6 +28,7 @@ extension ApiClientScriptX on ApiClient {
           'catch_up_missed': catchUpMissed,
           'turtle_mode': turtleMode,
           'turtle_keep_tasks': turtleKeepTasks,
+          'free_cycle_tasks': freeCycleTasks,
           'entries': entries.map((entry) => entry.toJson()).toList(),
         },
       ),
@@ -39,9 +41,17 @@ extension ApiClientScriptX on ApiClient {
     );
   }
 
-  Future<WeeklyScheduleData?> applyWeeklySchedule(String scriptName) async {
+  Future<WeeklyScheduleData?> applyWeeklySchedule(
+    String scriptName, {
+    bool preserveExistingTimes = false,
+  }) async {
     final res = await request(
-      () => post('/$scriptName/weekly_schedule/apply'),
+      () => post(
+        '/$scriptName/weekly_schedule/apply',
+        queryParameters: {
+          'preserve_existing_times': preserveExistingTimes,
+        },
+      ),
     );
     if (!res.isSuccess || res.data is! Map) {
       return null;

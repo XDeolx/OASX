@@ -1,3 +1,8 @@
+const weeklyScheduleDefaultFreeCycleTasks = <String>[
+  'KekkaiActivation',
+  'KekkaiUtilize',
+];
+
 class WeeklyScheduleEntry {
   const WeeklyScheduleEntry({
     required this.task,
@@ -58,6 +63,7 @@ class WeeklyScheduleData {
     this.catchUpMissed = false,
     this.turtleMode = false,
     this.turtleKeepTasks = const [],
+    this.freeCycleTasks = weeklyScheduleDefaultFreeCycleTasks,
     this.lastAppliedDate = '',
     this.lastAppliedAt = '',
     this.serverNow = '',
@@ -69,6 +75,7 @@ class WeeklyScheduleData {
   final bool catchUpMissed;
   final bool turtleMode;
   final List<String> turtleKeepTasks;
+  final List<String> freeCycleTasks;
   final List<WeeklyScheduleEntry> entries;
   final List<WeeklyScheduleTask> tasks;
   final List<String> plannedTasks;
@@ -86,6 +93,9 @@ class WeeklyScheduleData {
       catchUpMissed: json['catch_up_missed'] == true,
       turtleMode: json['turtle_mode'] == true,
       turtleKeepTasks: _stringList(json['turtle_keep_tasks']),
+      freeCycleTasks: json.containsKey('free_cycle_tasks')
+          ? _stringList(json['free_cycle_tasks'])
+          : weeklyScheduleDefaultFreeCycleTasks,
       entries: _mapList(json['entries'], WeeklyScheduleEntry.fromJson),
       tasks: _mapList(json['tasks'], WeeklyScheduleTask.fromJson),
       plannedTasks: _stringList(json['planned_tasks']),
