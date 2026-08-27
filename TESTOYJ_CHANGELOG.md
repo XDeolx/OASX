@@ -2,7 +2,7 @@
 
 本文件只记录 `XDeolx/OASX` 的 `testoyj` 分支改动，独立于上游 `CHANGELOG.md`、README 和许可证。
 
-当前版本：`testoyj-v0.3.12.2`
+当前版本：`testoyj-v0.3.12.3`
 
 ## 2026-08-27
 
