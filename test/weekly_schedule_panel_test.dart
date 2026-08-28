@@ -104,7 +104,7 @@ void main() {
       expect(range.end, 10);
       expect(tester.takeException(), isNull);
 
-      await tester.tap(find.byType(TextButton));
+      await tester.tap(find.byType(TextButton).last);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpWidget(const SizedBox.shrink());
     },
