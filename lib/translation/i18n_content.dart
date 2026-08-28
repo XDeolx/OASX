@@ -182,6 +182,15 @@ class I18n {
   static const String weeklyScheduleAdd = 'weekly_schedule_add',
       weeklyScheduleEdit = 'weekly_schedule_edit',
       weeklyScheduleTask = 'weekly_schedule_task';
+  static const String weeklyScheduleBulkAdd = 'weekly_schedule_bulk_add',
+      weeklyScheduleBulkAddTitle = 'weekly_schedule_bulk_add_title',
+      weeklyScheduleBulkAdded = 'weekly_schedule_bulk_added';
+  static const String weeklyScheduleTargetDays =
+          'weekly_schedule_target_days',
+      weeklyScheduleRandomOffset = 'weekly_schedule_random_offset',
+      weeklyScheduleMinutes = 'weekly_schedule_minutes';
+  static const String weeklyScheduleReplaceSameTask =
+      'weekly_schedule_replace_same_task';
   static const String weeklyScheduleWeekday = 'weekly_schedule_weekday',
       weeklyScheduleTime = 'weekly_schedule_time',
       weeklyScheduleAll = 'weekly_schedule_all';

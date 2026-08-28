@@ -66,6 +66,98 @@ void main() {
     expect(copied, hasLength(2));
   });
 
+  test('bulk add creates one fixed randomized time for every selected day', () {
+    final added = addWeeklyTaskToWeekdays(
+      entries: const [],
+      task: 'AreaBoss',
+      weekdays: const {1, 2, 3, 4, 5, 6, 7},
+      baseTime: '09:00',
+      minOffsetMinutes: 5,
+      maxOffsetMinutes: 10,
+      replaceSameTask: true,
+      nextInt: (_) => 0,
+    );
+
+    expect(added, hasLength(7));
+    expect(added.map((entry) => entry.weekday).toSet(), {1, 2, 3, 4, 5, 6, 7});
+    expect(added.map((entry) => entry.time).toSet(), hasLength(7));
+    for (final entry in added) {
+      final parts = entry.time.split(':').map(int.parse).toList();
+      final offset = (parts[0] * 60 + parts[1] - 9 * 60).abs();
+      expect(offset, inInclusiveRange(5, 10));
+    }
+  });
+
+  test('bulk add replaces only matching tasks on selected weekdays', () {
+    const entries = [
+      WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '08:00'),
+      WeeklyScheduleEntry(task: 'AreaBoss', weekday: 2, time: '08:00'),
+      WeeklyScheduleEntry(task: 'Restart', weekday: 1, time: '07:00'),
+    ];
+
+    final added = addWeeklyTaskToWeekdays(
+      entries: entries,
+      task: 'AreaBoss',
+      weekdays: const {1},
+      baseTime: '09:00',
+      minOffsetMinutes: 0,
+      maxOffsetMinutes: 0,
+      replaceSameTask: true,
+    );
+
+    expect(
+      added.where((entry) => entry.task == 'AreaBoss' && entry.weekday == 1),
+      hasLength(1),
+    );
+    expect(
+      added.any((entry) => entry.task == 'AreaBoss' && entry.weekday == 2),
+      isTrue,
+    );
+    expect(
+      added.any((entry) => entry.task == 'Restart' && entry.weekday == 1),
+      isTrue,
+    );
+  });
+
+  test('bulk add keeps an existing matching task when replace is disabled', () {
+    const entries = [
+      WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '08:00'),
+    ];
+
+    final added = addWeeklyTaskToWeekdays(
+      entries: entries,
+      task: 'AreaBoss',
+      weekdays: const {1},
+      baseTime: '09:00',
+      minOffsetMinutes: 0,
+      maxOffsetMinutes: 0,
+      replaceSameTask: false,
+    );
+
+    expect(
+      added.where((entry) => entry.task == 'AreaBoss' && entry.weekday == 1),
+      hasLength(2),
+    );
+  });
+
+  test('bulk add keeps randomized times within the selected weekday', () {
+    final added = addWeeklyTaskToWeekdays(
+      entries: const [],
+      task: 'AreaBoss',
+      weekdays: const {1},
+      baseTime: '00:03',
+      minOffsetMinutes: 5,
+      maxOffsetMinutes: 10,
+      replaceSameTask: true,
+      nextInt: (_) => 0,
+    );
+
+    expect(
+      added.single.time,
+      isIn(['00:08', '00:09', '00:10', '00:11', '00:12', '00:13']),
+    );
+  });
+
   test('import uses enabled task next runs and keeps existing entries', () {
     const entries = [
       WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '09:00'),

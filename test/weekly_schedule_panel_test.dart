@@ -68,6 +68,47 @@ void main() {
     );
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets(
+    'bulk add dialog selects every weekday and replacement by default',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(700, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(
+        const GetMaterialApp(
+          home: Scaffold(
+            body: WeeklySchedulePanel(
+              scriptName: 'test',
+              initialData: _populatedData,
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.tap(find.byIcon(Icons.calendar_month_rounded));
+      await tester.pumpAndSettle();
+
+      final weekdayChips = tester.widgetList<FilterChip>(
+        find.byType(FilterChip),
+      );
+      expect(weekdayChips, hasLength(7));
+      expect(weekdayChips.every((chip) => chip.selected), isTrue);
+      expect(
+        tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
+        isTrue,
+      );
+      expect(
+        tester.widget<RangeSlider>(find.byType(RangeSlider)).values,
+        const RangeValues(5, 10),
+      );
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byType(TextButton));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
 }
 
 const _populatedData = WeeklyScheduleData(

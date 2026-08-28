@@ -185,6 +185,29 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     await _save(notify: false);
   }
 
+  Future<void> _bulkAddEntries() async {
+    final request = await _showBulkAddDialog();
+    if (request == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _entries = addWeeklyTaskToWeekdays(
+        entries: _entries,
+        task: request.task,
+        weekdays: request.weekdays,
+        baseTime: request.baseTime,
+        minOffsetMinutes: request.minOffsetMinutes,
+        maxOffsetMinutes: request.maxOffsetMinutes,
+        replaceSameTask: request.replaceSameTask,
+      );
+      _selectedWeekday = 0;
+      _dirty = true;
+    });
+    if (await _save(notify: false) != null && mounted) {
+      Get.snackbar(I18n.success.tr, I18n.weeklyScheduleBulkAdded.tr);
+    }
+  }
+
   Future<void> _editEntry(int index) async {
     final entry = await _showEntryDialog(initial: _entries[index]);
     if (entry == null || !mounted) {
@@ -651,6 +674,177 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     );
   }
 
+  Future<_BulkAddRequest?> _showBulkAddDialog() async {
+    final tasks = _data?.tasks
+            .map((task) => task.name)
+            .where((task) => !_turtleMode || _turtleKeepTasks.contains(task))
+            .toList() ??
+        [];
+    if (tasks.isEmpty) {
+      return null;
+    }
+    var task = tasks.first;
+    var runTime = const TimeOfDay(hour: 9, minute: 0);
+    var weekdays = <int>{
+      DateTime.monday,
+      DateTime.tuesday,
+      DateTime.wednesday,
+      DateTime.thursday,
+      DateTime.friday,
+      DateTime.saturday,
+      DateTime.sunday,
+    };
+    var offsetRange = const RangeValues(5, 10);
+    var replaceSameTask = true;
+    return showDialog<_BulkAddRequest>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(I18n.weeklyScheduleBulkAddTitle.tr),
+          content: SizedBox(
+            width: 460,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: task,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: I18n.weeklyScheduleTask.tr,
+                      border: const OutlineInputBorder(),
+                    ),
+                    items: tasks
+                        .map(
+                          (name) => DropdownMenuItem(
+                            value: name,
+                            child: Text(
+                              name.tr,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setDialogState(() => task = value);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.schedule_rounded),
+                    title: Text(I18n.weeklyScheduleTime.tr),
+                    trailing: Text(
+                      _formatTime(runTime),
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    onTap: () async {
+                      final selected = await showTimePicker(
+                        context: dialogContext,
+                        initialTime: runTime,
+                      );
+                      if (selected != null) {
+                        setDialogState(() => runTime = selected);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    I18n.weeklyScheduleTargetDays.tr,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: List.generate(7, (index) {
+                      final weekday = index + 1;
+                      return FilterChip(
+                        label: Text(_weekdayLabel(weekday, short: true)),
+                        selected: weekdays.contains(weekday),
+                        onSelected: (selected) {
+                          setDialogState(() {
+                            weekdays = Set<int>.from(weekdays);
+                            if (selected) {
+                              weekdays.add(weekday);
+                            } else {
+                              weekdays.remove(weekday);
+                            }
+                          });
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          I18n.weeklyScheduleRandomOffset.tr,
+                          style: Theme.of(context).textTheme.labelLarge,
+                        ),
+                      ),
+                      Text(
+                        '${offsetRange.start.round()}-'
+                        '${offsetRange.end.round()} '
+                        '${I18n.weeklyScheduleMinutes.tr}',
+                      ),
+                    ],
+                  ),
+                  RangeSlider(
+                    values: offsetRange,
+                    min: 0,
+                    max: 60,
+                    divisions: 60,
+                    labels: RangeLabels(
+                      offsetRange.start.round().toString(),
+                      offsetRange.end.round().toString(),
+                    ),
+                    onChanged: (value) {
+                      setDialogState(() => offsetRange = value);
+                    },
+                  ),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: replaceSameTask,
+                    title: Text(I18n.weeklyScheduleReplaceSameTask.tr),
+                    onChanged: (value) {
+                      setDialogState(() => replaceSameTask = value ?? true);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(I18n.cancel.tr),
+            ),
+            FilledButton(
+              onPressed: weekdays.isEmpty
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(
+                        _BulkAddRequest(
+                          task: task,
+                          weekdays: weekdays,
+                          baseTime: _formatTime(runTime),
+                          minOffsetMinutes: offsetRange.start.round(),
+                          maxOffsetMinutes: offsetRange.end.round(),
+                          replaceSameTask: replaceSameTask,
+                        ),
+                      ),
+              child: Text(I18n.confirm.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _sortEntries() {
     _entries.sort((a, b) {
       final day = a.weekday.compareTo(b.weekday);
@@ -797,6 +991,11 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           tooltip: I18n.weeklyScheduleAdd.tr,
           onPressed: _saving ? null : _addEntry,
           icon: const Icon(Icons.add_rounded),
+        ),
+        IconButton(
+          tooltip: I18n.weeklyScheduleBulkAdd.tr,
+          onPressed: _saving ? null : _bulkAddEntries,
+          icon: const Icon(Icons.calendar_month_rounded),
         ),
         IconButton(
           tooltip: I18n.weeklyScheduleCopyDay.tr,
@@ -1124,4 +1323,22 @@ class _CopyDayRequest {
   final int sourceWeekday;
   final int targetWeekday;
   final bool replaceTarget;
+}
+
+class _BulkAddRequest {
+  const _BulkAddRequest({
+    required this.task,
+    required this.weekdays,
+    required this.baseTime,
+    required this.minOffsetMinutes,
+    required this.maxOffsetMinutes,
+    required this.replaceSameTask,
+  });
+
+  final String task;
+  final Set<int> weekdays;
+  final String baseTime;
+  final int minOffsetMinutes;
+  final int maxOffsetMinutes;
+  final bool replaceSameTask;
 }

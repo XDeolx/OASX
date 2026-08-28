@@ -1,4 +1,96 @@
+import 'dart:math';
+
 import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
+
+List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
+  required List<WeeklyScheduleEntry> entries,
+  required String task,
+  required Set<int> weekdays,
+  required String baseTime,
+  required int minOffsetMinutes,
+  required int maxOffsetMinutes,
+  required bool replaceSameTask,
+  int Function(int max)? nextInt,
+}) {
+  final selectedWeekdays = weekdays
+      .where(
+        (weekday) =>
+            weekday >= DateTime.monday && weekday <= DateTime.sunday,
+      )
+      .toSet()
+      .toList()
+    ..sort();
+  if (selectedWeekdays.isEmpty) {
+    return List<WeeklyScheduleEntry>.from(entries);
+  }
+
+  final baseMinutes = _parseClockMinutes(baseTime);
+  final firstOffset = minOffsetMinutes.clamp(0, 1439).toInt();
+  final secondOffset = maxOffsetMinutes.clamp(0, 1439).toInt();
+  final minOffset = min(firstOffset, secondOffset);
+  final maxOffset = max(firstOffset, secondOffset);
+  final offsets = <int>[
+    for (var offset = -maxOffset; offset <= maxOffset; offset++)
+      if (offset.abs() >= minOffset &&
+          baseMinutes + offset >= 0 &&
+          baseMinutes + offset < 24 * 60)
+        offset,
+  ];
+  final randomNextInt = nextInt ?? Random().nextInt;
+  for (var index = offsets.length - 1; index > 0; index--) {
+    final swapIndex = randomNextInt(index + 1);
+    if (swapIndex < 0 || swapIndex > index) {
+      throw RangeError.range(swapIndex, 0, index, 'nextInt result');
+    }
+    final value = offsets[index];
+    offsets[index] = offsets[swapIndex];
+    offsets[swapIndex] = value;
+  }
+
+  final retained = entries.where(
+    (entry) =>
+        !replaceSameTask ||
+        entry.task != task ||
+        !selectedWeekdays.contains(entry.weekday),
+  );
+  final generated = <WeeklyScheduleEntry>[];
+  for (var index = 0; index < selectedWeekdays.length; index++) {
+    final offset = offsets.isEmpty ? 0 : offsets[index % offsets.length];
+    generated.add(
+      WeeklyScheduleEntry(
+        task: task,
+        weekday: selectedWeekdays[index],
+        time: _formatClockMinutes(baseMinutes + offset),
+      ),
+    );
+  }
+  return normalizeWeeklyScheduleEntries(retained.followedBy(generated));
+}
+
+int _parseClockMinutes(String value) {
+  final parts = value.split(':');
+  if (parts.length != 2) {
+    throw FormatException('Invalid weekly schedule time: $value');
+  }
+  final hour = int.tryParse(parts[0]);
+  final minute = int.tryParse(parts[1]);
+  if (hour == null ||
+      minute == null ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59) {
+    throw FormatException('Invalid weekly schedule time: $value');
+  }
+  return hour * 60 + minute;
+}
+
+String _formatClockMinutes(int value) {
+  final hour = value ~/ 60;
+  final minute = value % 60;
+  return '${hour.toString().padLeft(2, '0')}:'
+      '${minute.toString().padLeft(2, '0')}';
+}
 
 List<WeeklyScheduleEntry> copyWeeklyScheduleDay({
   required List<WeeklyScheduleEntry> entries,
