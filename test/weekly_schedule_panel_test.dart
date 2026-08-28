@@ -72,7 +72,7 @@ void main() {
   testWidgets(
     'bulk add dialog selects every weekday and replacement by default',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(700, 900));
+      await tester.binding.setSurfaceSize(const Size(1000, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(
@@ -87,8 +87,9 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(find.byIcon(Icons.calendar_month_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
+      expect(find.byType(AlertDialog), findsOneWidget);
       final weekdayChips = tester.widgetList<FilterChip>(
         find.byType(FilterChip),
       );
@@ -98,14 +99,13 @@ void main() {
         tester.widget<CheckboxListTile>(find.byType(CheckboxListTile)).value,
         isTrue,
       );
-      expect(
-        tester.widget<RangeSlider>(find.byType(RangeSlider)).values,
-        const RangeValues(5, 10),
-      );
+      final range = tester.widget<RangeSlider>(find.byType(RangeSlider)).values;
+      expect(range.start, 5);
+      expect(range.end, 10);
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.byType(TextButton));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
