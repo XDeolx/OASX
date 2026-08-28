@@ -20,7 +20,7 @@ class WeeklyScheduleEntry {
     return WeeklyScheduleEntry(
       task: json['task']?.toString() ?? '',
       weekday: int.tryParse(json['weekday']?.toString() ?? '') ?? 1,
-      time: json['time']?.toString() ?? '00:00',
+      time: json['time']?.toString() ?? '00:00:00',
       scheduledAt: json['scheduled_at']?.toString() ?? '',
     );
   }

@@ -71,7 +71,19 @@ jobs:
           $testExitCode = $LASTEXITCODE
           $testOutput | Write-Output
           if ($testExitCode -ne 0) {
-            $annotation = ($testOutput | Select-Object -Last 120 | Out-String)
+            $failureIndex = -1
+            for ($index = 0; $index -lt $testOutput.Count; $index++) {
+              if ($testOutput[$index] -match 'EXCEPTION CAUGHT|TestFailure|Expected:|Some tests failed') {
+                $failureIndex = $index
+                break
+              }
+            }
+            if ($failureIndex -ge 0) {
+              $failureEnd = [Math]::Min($failureIndex + 60, $testOutput.Count - 1)
+              $annotation = ($testOutput[$failureIndex..$failureEnd] | Out-String)
+            } else {
+              $annotation = ($testOutput | Select-Object -Last 40 | Out-String)
+            }
             $annotation = $annotation.Replace('%', '%25')
             $annotation = $annotation.Replace("`r", '%0D').Replace("`n", '%0A')
             Write-Output "::error file=test,line=1::$annotation"

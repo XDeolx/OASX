@@ -159,6 +159,9 @@ final Map<String, String> _us_ui = {
   I18n.weeklyScheduleMinutes: 'minutes',
   I18n.weeklyScheduleReplaceSameTask:
       'Replace the same task on selected weekdays',
+  I18n.weeklyScheduleKeyboardInput: 'Switch to keyboard input',
+  I18n.weeklyScheduleClockInput: 'Switch to clock input',
+  I18n.weeklyScheduleInvalidTime: 'Time is out of range',
   I18n.weeklyScheduleWeekday: 'Weekday',
   I18n.weeklyScheduleTime: 'Run time',
   I18n.weeklyScheduleAll: 'All',

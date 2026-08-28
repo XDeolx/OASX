@@ -24,7 +24,7 @@ List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
     return List<WeeklyScheduleEntry>.from(entries);
   }
 
-  final baseMinutes = _parseClockMinutes(baseTime);
+  final baseSeconds = _parseClockSeconds(baseTime);
   final firstOffset = minOffsetMinutes.clamp(0, 1439).toInt();
   final secondOffset = maxOffsetMinutes.clamp(0, 1439).toInt();
   final minOffset = min(firstOffset, secondOffset);
@@ -32,8 +32,8 @@ List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
   final offsets = <int>[
     for (var offset = -maxOffset; offset <= maxOffset; offset++)
       if (offset.abs() >= minOffset &&
-          baseMinutes + offset >= 0 &&
-          baseMinutes + offset < 24 * 60)
+          baseSeconds + offset * 60 >= 0 &&
+          baseSeconds + offset * 60 < 24 * 60 * 60)
         offset,
   ];
   final randomNextInt = nextInt ?? Random().nextInt;
@@ -60,36 +60,42 @@ List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
       WeeklyScheduleEntry(
         task: task,
         weekday: selectedWeekdays[index],
-        time: _formatClockMinutes(baseMinutes + offset),
+        time: _formatClockSeconds(baseSeconds + offset * 60),
       ),
     );
   }
   return normalizeWeeklyScheduleEntries(retained.followedBy(generated));
 }
 
-int _parseClockMinutes(String value) {
+int _parseClockSeconds(String value) {
   final parts = value.split(':');
-  if (parts.length != 2) {
+  if (parts.length < 2 || parts.length > 3) {
     throw FormatException('Invalid weekly schedule time: $value');
   }
   final hour = int.tryParse(parts[0]);
   final minute = int.tryParse(parts[1]);
+  final second = parts.length == 3 ? int.tryParse(parts[2]) : 0;
   if (hour == null ||
       minute == null ||
+      second == null ||
       hour < 0 ||
       hour > 23 ||
       minute < 0 ||
-      minute > 59) {
+      minute > 59 ||
+      second < 0 ||
+      second > 59) {
     throw FormatException('Invalid weekly schedule time: $value');
   }
-  return hour * 60 + minute;
+  return hour * 60 * 60 + minute * 60 + second;
 }
 
-String _formatClockMinutes(int value) {
-  final hour = value ~/ 60;
-  final minute = value % 60;
+String _formatClockSeconds(int value) {
+  final hour = value ~/ 3600;
+  final minute = value % 3600 ~/ 60;
+  final second = value % 60;
   return '${hour.toString().padLeft(2, '0')}:'
-      '${minute.toString().padLeft(2, '0')}';
+      '${minute.toString().padLeft(2, '0')}:'
+      '${second.toString().padLeft(2, '0')}';
 }
 
 List<WeeklyScheduleEntry> copyWeeklyScheduleDay({
@@ -130,7 +136,8 @@ List<WeeklyScheduleEntry> buildEntriesFromCurrentScheduler({
       task: task.name,
       weekday: nextRun.weekday,
       time: '${nextRun.hour.toString().padLeft(2, '0')}:'
-          '${nextRun.minute.toString().padLeft(2, '0')}',
+          '${nextRun.minute.toString().padLeft(2, '0')}:'
+          '${nextRun.second.toString().padLeft(2, '0')}',
     );
   }).whereType<WeeklyScheduleEntry>();
   return normalizeWeeklyScheduleEntries(
@@ -174,5 +181,6 @@ DateTime weeklyScheduleCurrentWeekDateTime(
     runDate.day,
     int.tryParse(parts.first) ?? 0,
     parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+    parts.length > 2 ? int.tryParse(parts[2]) ?? 0 : 0,
   );
 }

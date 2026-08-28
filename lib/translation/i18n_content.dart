@@ -191,6 +191,10 @@ class I18n {
       weeklyScheduleMinutes = 'weekly_schedule_minutes';
   static const String weeklyScheduleReplaceSameTask =
       'weekly_schedule_replace_same_task';
+  static const String weeklyScheduleKeyboardInput =
+          'weekly_schedule_keyboard_input',
+      weeklyScheduleClockInput = 'weekly_schedule_clock_input',
+      weeklyScheduleInvalidTime = 'weekly_schedule_invalid_time';
   static const String weeklyScheduleWeekday = 'weekly_schedule_weekday',
       weeklyScheduleTime = 'weekly_schedule_time',
       weeklyScheduleAll = 'weekly_schedule_all';

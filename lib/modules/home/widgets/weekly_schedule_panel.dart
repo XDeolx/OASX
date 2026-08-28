@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:oasx/api/api_client.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_operations.dart';
+import 'package:oasx/modules/home/widgets/weekly_schedule_time_picker.dart';
 import 'package:oasx/translation/i18n_content.dart';
 
 class WeeklySchedulePanel extends StatefulWidget {
@@ -571,11 +572,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     }
     var task = initial?.task ?? tasks.first;
     var weekday = initial?.weekday ?? DateTime.now().weekday;
-    final parts = (initial?.time ?? '09:00').split(':');
-    var runTime = TimeOfDay(
-      hour: int.tryParse(parts.first) ?? 9,
-      minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
-    );
+    var runTime = WeeklyScheduleClockTime.parse(initial?.time ?? '09:00:00');
     return showDialog<WeeklyScheduleEntry>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -637,11 +634,11 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
                   leading: const Icon(Icons.schedule_rounded),
                   title: Text(I18n.weeklyScheduleTime.tr),
                   trailing: Text(
-                    _formatTime(runTime),
+                    runTime.format(),
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   onTap: () async {
-                    final selected = await showTimePicker(
+                    final selected = await showWeeklyScheduleTimePicker(
                       context: dialogContext,
                       initialTime: runTime,
                     );
@@ -663,7 +660,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
                 WeeklyScheduleEntry(
                   task: task,
                   weekday: weekday,
-                  time: _formatTime(runTime),
+                  time: runTime.format(),
                 ),
               ),
               child: Text(I18n.confirm.tr),
@@ -684,7 +681,11 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       return null;
     }
     var task = tasks.first;
-    var runTime = const TimeOfDay(hour: 9, minute: 0);
+    var runTime = const WeeklyScheduleClockTime(
+      hour: 9,
+      minute: 0,
+      second: 0,
+    );
     var weekdays = <int>{
       DateTime.monday,
       DateTime.tuesday,
@@ -738,11 +739,11 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
                     leading: const Icon(Icons.schedule_rounded),
                     title: Text(I18n.weeklyScheduleTime.tr),
                     trailing: Text(
-                      _formatTime(runTime),
+                      runTime.format(),
                       style: Theme.of(context).textTheme.titleMedium,
                     ),
                     onTap: () async {
-                      final selected = await showTimePicker(
+                      final selected = await showWeeklyScheduleTimePicker(
                         context: dialogContext,
                         initialTime: runTime,
                       );
@@ -831,7 +832,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
                         _BulkAddRequest(
                           task: task,
                           weekdays: weekdays,
-                          baseTime: _formatTime(runTime),
+                          baseTime: runTime.format(),
                           minOffsetMinutes: offsetRange.start.round(),
                           maxOffsetMinutes: offsetRange.end.round(),
                           replaceSameTask: replaceSameTask,
@@ -1284,11 +1285,6 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     return labels[weekday - 1].tr;
   }
 
-  String _formatTime(TimeOfDay time) {
-    return '${time.hour.toString().padLeft(2, '0')}:'
-        '${time.minute.toString().padLeft(2, '0')}';
-  }
-
   String _entryScheduledAt(WeeklyScheduleEntry entry) {
     if (entry.scheduledAt.isNotEmpty) {
       return entry.scheduledAt;
@@ -1297,10 +1293,13 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       entry,
       DateTime.now(),
     );
+    final displayTime = entry.time.length == 5
+        ? '${entry.time}:00'
+        : entry.time;
     return '${scheduledAt.year.toString().padLeft(4, '0')}-'
         '${scheduledAt.month.toString().padLeft(2, '0')}-'
         '${scheduledAt.day.toString().padLeft(2, '0')} '
-        '${entry.time}:00';
+        '$displayTime';
   }
 
   String _formatDateTime(DateTime value) {

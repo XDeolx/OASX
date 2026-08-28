@@ -85,6 +85,7 @@ void main() {
       final parts = entry.time.split(':').map(int.parse).toList();
       final offset = (parts[0] * 60 + parts[1] - 9 * 60).abs();
       expect(offset, inInclusiveRange(5, 10));
+      expect(parts[2], 0);
     }
   });
 
@@ -154,7 +155,14 @@ void main() {
 
     expect(
       added.single.time,
-      isIn(['00:08', '00:09', '00:10', '00:11', '00:12', '00:13']),
+      isIn([
+        '00:08:00',
+        '00:09:00',
+        '00:10:00',
+        '00:11:00',
+        '00:12:00',
+        '00:13:00',
+      ]),
     );
   });
 
@@ -188,7 +196,7 @@ void main() {
         isA<WeeklyScheduleEntry>()
             .having((entry) => entry.task, 'task', 'Restart')
             .having((entry) => entry.weekday, 'weekday', DateTime.wednesday)
-            .having((entry) => entry.time, 'time', '13:45'),
+            .having((entry) => entry.time, 'time', '13:45:00'),
       ),
     );
   });
@@ -213,6 +221,44 @@ void main() {
     expect(
       weeklyScheduleCurrentWeekDateTime(tuesday, reference),
       DateTime(2026, 8, 25, 8, 10),
+    );
+  });
+
+  test('randomized bulk add preserves selected seconds', () {
+    final added = addWeeklyTaskToWeekdays(
+      entries: const [],
+      task: 'AreaBoss',
+      weekdays: const {1},
+      baseTime: '09:00:37',
+      minOffsetMinutes: 5,
+      maxOffsetMinutes: 5,
+      replaceSameTask: true,
+      nextInt: (_) => 0,
+    );
+
+    expect(added.single.time.endsWith(':37'), isTrue);
+  });
+
+  test('current week date reads second precision and legacy minute times', () {
+    const precise = WeeklyScheduleEntry(
+      task: 'AreaBoss',
+      weekday: DateTime.monday,
+      time: '08:10:37',
+    );
+    const legacy = WeeklyScheduleEntry(
+      task: 'Restart',
+      weekday: DateTime.tuesday,
+      time: '09:05',
+    );
+    final reference = DateTime(2026, 8, 26, 15);
+
+    expect(
+      weeklyScheduleCurrentWeekDateTime(precise, reference),
+      DateTime(2026, 8, 24, 8, 10, 37),
+    );
+    expect(
+      weeklyScheduleCurrentWeekDateTime(legacy, reference),
+      DateTime(2026, 8, 25, 9, 5),
     );
   });
 }
