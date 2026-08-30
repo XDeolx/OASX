@@ -19,6 +19,12 @@ final Map<String, String> _cn_utilize_config = {
   'guild_ap_enable_help': '必选项',
   'guild_assets_enable': '顺路收取寮资金',
   'guild_assets_enable_help': '必选项',
+  'guild_lottery_enable': '顺手进行寮抽奖',
+  'guild_lottery_enable_help':
+      '开启后，结界蹭卡收尾经过寮主页时会处理当前可用的寮抽奖；关闭时完全跳过，默认关闭。',
+  'guild_reward_random_wait': '寮奖励随机等待',
+  'guild_reward_random_wait_help':
+      '开启后，顺手收取寮资金（金币）、体力和进行寮抽奖时，会在动作之间随机等待 2-4 秒；默认关闭。',
   'box_ap_enable': '顺路收取体力盒子',
   'box_ap_enable_help': '必选项',
   'box_exp_enable': '顺路收取经验盒子',
