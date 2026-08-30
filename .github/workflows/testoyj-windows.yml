@@ -142,9 +142,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = $env:GITHUB_REF_NAME -replace '^testoyj-v', ''
+          $changelog = Get-Content -LiteralPath TESTOYJ_CHANGELOG.md
+          $sectionStart = -1
+          $sectionEnd = $changelog.Count
+          for ($index = 0; $index -lt $changelog.Count; $index++) {
+            if ($changelog[$index] -match '^## \d{4}-\d{2}-\d{2}$') {
+              if ($sectionStart -lt 0) {
+                $sectionStart = $index
+              } else {
+                $sectionEnd = $index
+                break
+              }
+            }
+          }
+          if ($sectionStart -lt 0) {
+            throw 'No dated release section found in TESTOYJ_CHANGELOG.md'
+          }
+          $notes = @(
+            "# OASX testoyj v$version"
+            ''
+          ) + $changelog[$sectionStart..($sectionEnd - 1)] + @(
+            ''
+            '[查看完整更新日志](https://github.com/XDeolx/OASX/blob/testoyj/TESTOYJ_CHANGELOG.md)'
+          )
+          $notesPath = Join-Path $env:RUNNER_TEMP 'testoyj_release_notes.md'
+          $notes | Set-Content -LiteralPath $notesPath -Encoding utf8
           gh release create $env:GITHUB_REF_NAME `
             '${{ steps.package.outputs.asset_path }}' `
             --repo $env:GITHUB_REPOSITORY `
             --verify-tag `
             --title "OASX testoyj v$version" `
-            --notes-file TESTOYJ_CHANGELOG.md
+            --notes-file $notesPath

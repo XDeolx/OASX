@@ -39,8 +39,8 @@ class AppUpdateService extends GetxService {
 
   UpdateDownloadSession? _activeDownloadSession;
 
-  /// Suppresses automatic remote checks for one week.
-  static const Duration _updateCheckInterval = Duration(days: 7);
+  /// Checks at most once per day unless the user requests a manual check.
+  static const Duration _updateCheckInterval = Duration(days: 1);
 
   /// Checks for a new OASX release and opens the update dialog when found.
   Future<void> checkForUpdates({
