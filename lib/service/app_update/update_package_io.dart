@@ -30,20 +30,37 @@ class UpdateDownloadCancelledException implements Exception {
 
 /// Handles download and checksum work for app update packages.
 class UpdatePackageIo {
+  static const Duration _connectTimeout = Duration(seconds: 15);
+  static const Duration _responseTimeout = Duration(seconds: 20);
+
   /// Fetches a JSON object from [url] with optional proxy support.
   static Future<Map<String, dynamic>> fetchJsonMap(
     String url, {
     String? proxyUrl,
   }) async {
     final httpClient = HttpClient();
+    httpClient.connectionTimeout = _connectTimeout;
+    httpClient.idleTimeout = _responseTimeout;
     _configureProxy(httpClient, proxyUrl);
     try {
-      final request = await httpClient.getUrl(Uri.parse(url));
-      final response = await request.close();
+      final request = await httpClient
+          .getUrl(Uri.parse(url))
+          .timeout(_connectTimeout);
+      request.headers.set(HttpHeaders.userAgentHeader, 'OASX-Updater');
+      request.headers.set(
+        HttpHeaders.acceptHeader,
+        'application/vnd.github+json',
+      );
+      request.headers.set('X-GitHub-Api-Version', '2022-11-28');
+      final response = await request.close().timeout(_responseTimeout);
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw HttpException('request_failed_${response.statusCode}');
       }
-      final body = await utf8.decoder.bind(response).join();
+      final body = await utf8
+          .decoder
+          .bind(response)
+          .join()
+          .timeout(_responseTimeout);
       final decoded = jsonDecode(body);
       if (decoded is! Map<String, dynamic>) {
         throw const FormatException('invalid_json_payload');

@@ -237,15 +237,17 @@ class AppUpdateService extends GetxService {
   /// Fetches the latest release through proxy when configured, otherwise direct.
   Future<ApiResult<GithubReleaseModel>> _fetchLatestReleaseResult() async {
     final proxyUrl = _readProxyUrl();
-    if (proxyUrl.isEmpty) {
-      return ApiClient().getGithubReleaseResult();
-    }
     try {
       final json = await UpdatePackageIo.fetchJsonMap(
         updateUrlGithub,
-        proxyUrl: proxyUrl,
+        proxyUrl: proxyUrl.isEmpty ? null : proxyUrl,
       );
       final release = GithubReleaseModel.fromJson(json);
+      if (!release.isValid) {
+        return ApiResult<GithubReleaseModel>.failure(
+          'invalid_release_payload',
+        );
+      }
       return ApiResult<GithubReleaseModel>.success(release);
     } catch (error) {
       final message = error is HttpException ? error.message : error.toString();
