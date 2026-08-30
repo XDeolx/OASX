@@ -930,63 +930,108 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Widget _buildToolbar() {
-    final status = Wrap(
+    final primaryControls = Wrap(
+      key: const ValueKey<String>('weekly-schedule-primary-controls'),
       crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 4,
+      spacing: 16,
+      runSpacing: 6,
       children: [
-        Switch(
-          value: _enabled,
-          onChanged: _saving ? null : _setEnabled,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildCompactSwitch(
+              value: _enabled,
+              onChanged: _saving ? null : _setEnabled,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              _enabled
+                  ? I18n.weeklyScheduleEnabled.tr
+                  : I18n.weeklyScheduleDisabled.tr,
+            ),
+          ],
         ),
-        Text(
-          _enabled
-              ? I18n.weeklyScheduleEnabled.tr
-              : I18n.weeklyScheduleDisabled.tr,
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: Checkbox(
+                value: _catchUpMissed,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                onChanged: _saving
+                    ? null
+                    : (value) => _setCatchUpMissed(value ?? false),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(I18n.weeklyScheduleCatchUpMissed.tr),
+          ],
         ),
-        const SizedBox(width: 8),
-        Checkbox(
-          value: _catchUpMissed,
-          onChanged: _saving
-              ? null
-              : (value) => _setCatchUpMissed(value ?? false),
+      ],
+    );
+    final modeControls = Wrap(
+      key: const ValueKey<String>('weekly-schedule-mode-controls'),
+      crossAxisAlignment: WrapCrossAlignment.center,
+      spacing: 16,
+      runSpacing: 6,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildCompactSwitch(
+              value: _turtleMode,
+              onChanged: _saving || !_enabled ? null : _setTurtleMode,
+            ),
+            const SizedBox(width: 6),
+            Text(I18n.weeklyScheduleTurtleMode.tr),
+            IconButton(
+              tooltip: I18n.weeklyScheduleTurtleSelect.tr,
+              visualDensity: VisualDensity.compact,
+              onPressed: _saving || !_enabled ? null : _editTurtleTasks,
+              icon: Icon(
+                Icons.shield_rounded,
+                color: _turtleMode ? Colors.lightBlue : null,
+              ),
+            ),
+          ],
         ),
-        Text(I18n.weeklyScheduleCatchUpMissed.tr),
-        const SizedBox(width: 8),
-        Switch(
-          value: _turtleMode,
-          onChanged: _saving || !_enabled ? null : _setTurtleMode,
-        ),
-        Text(I18n.weeklyScheduleTurtleMode.tr),
-        IconButton(
-          tooltip: I18n.weeklyScheduleTurtleSelect.tr,
-          onPressed: _saving || !_enabled ? null : _editTurtleTasks,
-          icon: Icon(
-            Icons.shield_rounded,
-            color: _turtleMode ? Colors.lightBlue : null,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(I18n.weeklyScheduleFreeCycle.tr),
-        IconButton(
-          tooltip: I18n.weeklyScheduleFreeCycleSelect.tr,
-          onPressed: _saving || !_enabled ? null : _editFreeCycleTasks,
-          icon: Icon(
-            Icons.autorenew_rounded,
-            color: _freeCycleTasks.isNotEmpty ? Colors.lightBlue : null,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(I18n.weeklyScheduleFreeCycle.tr),
+            IconButton(
+              tooltip: I18n.weeklyScheduleFreeCycleSelect.tr,
+              visualDensity: VisualDensity.compact,
+              onPressed: _saving || !_enabled ? null : _editFreeCycleTasks,
+              icon: Icon(
+                Icons.autorenew_rounded,
+                color: _freeCycleTasks.isNotEmpty ? Colors.lightBlue : null,
+              ),
+            ),
+          ],
         ),
         if (_dirty)
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Text(
-              I18n.argsDraftDirty.tr,
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
+          Text(
+            I18n.argsDraftDirty.tr,
+            style: TextStyle(color: Theme.of(context).colorScheme.primary),
           ),
       ],
     );
-    final actions = Row(
-      mainAxisSize: MainAxisSize.min,
+    final status = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        primaryControls,
+        const SizedBox(height: 4),
+        modeControls,
+      ],
+    );
+    final actions = Wrap(
+      key: const ValueKey<String>('weekly-schedule-actions'),
+      alignment: WrapAlignment.end,
+      runAlignment: WrapAlignment.end,
       children: [
         IconButton(
           tooltip: I18n.weeklyScheduleAdd.tr,
@@ -1033,19 +1078,39 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 520) {
+        if (constraints.maxWidth < 840) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               status,
+              const SizedBox(height: 2),
               Align(alignment: Alignment.centerRight, child: actions),
             ],
           );
         }
         return Row(
-          children: [Expanded(child: status), actions],
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: status),
+            const SizedBox(width: 12),
+            SizedBox(width: 336, child: actions),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildCompactSwitch({
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    return SizedBox(
+      width: 42,
+      height: 30,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Switch(value: value, onChanged: onChanged),
+      ),
     );
   }
 

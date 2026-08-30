@@ -32,6 +32,49 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('weekly schedule toolbar keeps controls in stable narrow rows', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(700, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const GetMaterialApp(
+        home: Scaffold(
+          body: WeeklySchedulePanel(
+            scriptName: 'test',
+            initialData: _turtleData,
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final primary = find.byKey(
+      const ValueKey<String>('weekly-schedule-primary-controls'),
+    );
+    final modes = find.byKey(
+      const ValueKey<String>('weekly-schedule-mode-controls'),
+    );
+    final actions = find.byKey(
+      const ValueKey<String>('weekly-schedule-actions'),
+    );
+
+    expect(primary, findsOneWidget);
+    expect(modes, findsOneWidget);
+    expect(actions, findsOneWidget);
+    expect(
+      tester.getTopLeft(modes).dy,
+      greaterThan(tester.getTopLeft(primary).dy),
+    );
+    expect(
+      tester.getTopLeft(actions).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(modes).dy),
+    );
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('turtle mode hides schedule entries outside retained tasks', (
     tester,
   ) async {
