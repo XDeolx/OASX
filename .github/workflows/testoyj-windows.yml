@@ -67,7 +67,7 @@ jobs:
       - name: Run tests
         shell: pwsh
         run: |
-          $testOutput = & flutter test --no-pub --concurrency=1 2>&1
+          $testOutput = & flutter test --no-pub --concurrency=1 --reporter expanded 2>&1
           $testExitCode = $LASTEXITCODE
           $testOutput | Write-Output
           if ($testExitCode -ne 0) {
