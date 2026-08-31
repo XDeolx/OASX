@@ -27,13 +27,17 @@ List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
   final baseSeconds = _parseClockSeconds(baseTime);
   final firstOffset = minOffsetMinutes.clamp(0, 1439).toInt();
   final secondOffset = maxOffsetMinutes.clamp(0, 1439).toInt();
-  final minOffset = min(firstOffset, secondOffset);
-  final maxOffset = max(firstOffset, secondOffset);
+  final minOffsetSeconds = min(firstOffset, secondOffset) * 60;
+  final maxOffsetSeconds = max(firstOffset, secondOffset) * 60;
   final offsets = <int>[
-    for (var offset = -maxOffset; offset <= maxOffset; offset++)
-      if (offset.abs() >= minOffset &&
-          baseSeconds + offset * 60 >= 0 &&
-          baseSeconds + offset * 60 < 24 * 60 * 60)
+    for (
+      var offset = -maxOffsetSeconds;
+      offset <= maxOffsetSeconds;
+      offset++
+    )
+      if (offset.abs() >= minOffsetSeconds &&
+          baseSeconds + offset >= 0 &&
+          baseSeconds + offset < 24 * 60 * 60)
         offset,
   ];
   final randomNextInt = nextInt ?? Random().nextInt;
@@ -60,7 +64,7 @@ List<WeeklyScheduleEntry> addWeeklyTaskToWeekdays({
       WeeklyScheduleEntry(
         task: task,
         weekday: selectedWeekdays[index],
-        time: _formatClockSeconds(baseSeconds + offset * 60),
+        time: _formatClockSeconds(baseSeconds + offset),
       ),
     );
   }

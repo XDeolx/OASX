@@ -66,7 +66,7 @@ void main() {
     expect(copied, hasLength(2));
   });
 
-  test('bulk add creates one fixed randomized time for every selected day', () {
+  test('bulk add creates one second-level randomized time per selected day', () {
     final added = addWeeklyTaskToWeekdays(
       entries: const [],
       task: 'AreaBoss',
@@ -81,12 +81,15 @@ void main() {
     expect(added, hasLength(7));
     expect(added.map((entry) => entry.weekday).toSet(), {1, 2, 3, 4, 5, 6, 7});
     expect(added.map((entry) => entry.time).toSet(), hasLength(7));
+    final generatedSeconds = <int>[];
     for (final entry in added) {
       final parts = entry.time.split(':').map(int.parse).toList();
-      final offset = (parts[0] * 60 + parts[1] - 9 * 60).abs();
-      expect(offset, inInclusiveRange(5, 10));
-      expect(parts[2], 0);
+      final value = parts[0] * 3600 + parts[1] * 60 + parts[2];
+      final offsetSeconds = (value - 9 * 3600).abs();
+      expect(offsetSeconds, inInclusiveRange(5 * 60, 10 * 60));
+      generatedSeconds.add(parts[2]);
     }
+    expect(generatedSeconds.any((second) => second != 0), isTrue);
   });
 
   test('bulk add replaces only matching tasks on selected weekdays', () {
@@ -153,17 +156,9 @@ void main() {
       nextInt: (_) => 0,
     );
 
-    expect(
-      added.single.time,
-      isIn([
-        '00:08:00',
-        '00:09:00',
-        '00:10:00',
-        '00:11:00',
-        '00:12:00',
-        '00:13:00',
-      ]),
-    );
+    final parts = added.single.time.split(':').map(int.parse).toList();
+    final value = parts[0] * 3600 + parts[1] * 60 + parts[2];
+    expect(value, inInclusiveRange(8 * 60, 13 * 60));
   });
 
   test('import uses enabled task next runs and keeps existing entries', () {
@@ -224,19 +219,19 @@ void main() {
     );
   });
 
-  test('randomized bulk add preserves selected seconds', () {
+  test('randomized bulk add also randomizes seconds', () {
     final added = addWeeklyTaskToWeekdays(
       entries: const [],
       task: 'AreaBoss',
       weekdays: const {1},
       baseTime: '09:00:37',
       minOffsetMinutes: 5,
-      maxOffsetMinutes: 5,
+      maxOffsetMinutes: 10,
       replaceSameTask: true,
       nextInt: (_) => 0,
     );
 
-    expect(added.single.time.endsWith(':37'), isTrue);
+    expect(added.single.time.endsWith(':37'), isFalse);
   });
 
   test('current week date reads second precision and legacy minute times', () {

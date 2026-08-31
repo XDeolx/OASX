@@ -158,7 +158,8 @@ final Map<String, String> _us_ui = {
   I18n.weeklyScheduleBulkAddTitle: 'Add task to weekdays',
   I18n.weeklyScheduleBulkAdded: 'Task added to the weekly plan',
   I18n.weeklyScheduleTargetDays: 'Target weekdays',
-  I18n.weeklyScheduleRandomOffset: 'Random offset before or after base time',
+  I18n.weeklyScheduleRandomOffset:
+      'Second-level random offset before or after base time',
   I18n.weeklyScheduleMinutes: 'minutes',
   I18n.weeklyScheduleReplaceSameTask:
       'Replace the same task on selected weekdays',
