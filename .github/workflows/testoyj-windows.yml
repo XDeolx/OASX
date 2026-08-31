@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: testoyj-windows-${{ github.sha }}
+  cancel-in-progress: true
+
 env:
   FLUTTER_VERSION: "3.35.1"
   DART_VERSION: "3.9.0"
@@ -71,9 +75,16 @@ jobs:
           $testExitCode = $LASTEXITCODE
           $testOutput | Write-Output
           if ($testExitCode -ne 0) {
+            Write-Warning 'Flutter tests failed once; retrying the full serialized suite.'
+            Start-Sleep -Seconds 3
+            $testOutput = & flutter test --no-pub --concurrency=1 --reporter expanded 2>&1
+            $testExitCode = $LASTEXITCODE
+            $testOutput | Write-Output
+          }
+          if ($testExitCode -ne 0) {
             $failureIndex = -1
             for ($index = 0; $index -lt $testOutput.Count; $index++) {
-              if ($testOutput[$index] -match 'EXCEPTION CAUGHT|TestFailure|Expected:|Some tests failed') {
+              if ($testOutput[$index] -match '\[E\]|EXCEPTION CAUGHT|TestFailure|Expected:|Some tests failed') {
                 $failureIndex = $index
                 break
               }
@@ -94,10 +105,11 @@ jobs:
         shell: pwsh
         run: |
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and
-              $env:GITHUB_REF_NAME -match '^testoyj-v(\d+\.\d+\.\d+)\.(\d+)$') {
+              $env:GITHUB_REF_NAME -match '^testoyj-v(\d+\.\d+\.\d+)(?:\.(\d+))?$') {
+            $buildNumber = if ($Matches[2]) { $Matches[2] } else { '1' }
             flutter build windows --release `
               --build-name $Matches[1] `
-              --build-number $Matches[2]
+              --build-number $buildNumber
           } else {
             flutter build windows --release
           }

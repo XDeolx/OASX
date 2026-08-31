@@ -25,9 +25,23 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        AppVersionUtils.compareVersion(
+          'v0.3.12.9',
+          'testoyj-v1.0.0',
+        ),
+        isTrue,
+      );
+      expect(
+        AppVersionUtils.compareVersion(
+          'v1.0.0',
+          'testoyj-v1.0.0',
+        ),
+        isFalse,
+      );
     });
 
-    test('includes the Windows build number in the installed version', () {
+    test('formats legacy and stable installed versions', () {
       expect(
         AppVersionUtils.formatInstalledVersion(
           version: '0.3.12',
@@ -41,6 +55,13 @@ void main() {
           buildNumber: '0',
         ),
         'v0.3.12',
+      );
+      expect(
+        AppVersionUtils.formatInstalledVersion(
+          version: '1.0.0',
+          buildNumber: '1',
+        ),
+        'v1.0.0',
       );
     });
   });

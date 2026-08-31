@@ -2,9 +2,14 @@
 
 本文件只记录 `XDeolx/OASX` 的 `testoyj` 分支改动，独立于上游 `CHANGELOG.md`、README 和许可证。
 
-当前版本：`testoyj-v0.3.12.10`
+当前版本：`testoyj-v1.0.0`
 
 ## 2026-08-31
+
+### 首个正式版本
+
+- 版本号升级为 `testoyj-v1.0.0`，作为 testoyj OASX 的首个正式版本。
+- 内置更新兼容从 `testoyj-v0.3.12.9` 直接升级至 `testoyj-v1.0.0`，后续采用标准三段版本号。
 
 ### 百鬼棋局测试版提示
 
