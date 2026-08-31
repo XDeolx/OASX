@@ -71,6 +71,49 @@ class UpdatePackageIo {
     }
   }
 
+  /// Resolves the release tag exposed by a GitHub `/releases/latest` redirect.
+  static Future<String> fetchLatestReleaseTag(
+    String url, {
+    String? proxyUrl,
+  }) async {
+    final sourceUri = Uri.parse(url);
+    final httpClient = HttpClient();
+    httpClient.connectionTimeout = _connectTimeout;
+    httpClient.idleTimeout = _responseTimeout;
+    _configureProxy(httpClient, proxyUrl);
+    try {
+      final request = await httpClient
+          .getUrl(sourceUri)
+          .timeout(_connectTimeout);
+      request.followRedirects = false;
+      request.headers.set(HttpHeaders.userAgentHeader, 'OASX-Updater');
+      request.headers.set(HttpHeaders.acceptHeader, 'text/html');
+      final response = await request.close().timeout(_responseTimeout);
+      final statusCode = response.statusCode;
+      final location = response.headers.value(HttpHeaders.locationHeader);
+      await response.drain<void>().timeout(_responseTimeout);
+      if (statusCode < 300 || statusCode >= 400) {
+        throw HttpException('redirect_request_failed_$statusCode');
+      }
+      if (location == null || location.trim().isEmpty) {
+        throw const FormatException('missing_release_redirect');
+      }
+      final redirectUri = sourceUri.resolve(location.trim());
+      final pathSegments = redirectUri.pathSegments;
+      final tagIndex = pathSegments.lastIndexOf('tag');
+      if (tagIndex < 0 || tagIndex + 1 >= pathSegments.length) {
+        throw const FormatException('invalid_release_redirect');
+      }
+      final tag = pathSegments[tagIndex + 1].trim();
+      if (tag.isEmpty) {
+        throw const FormatException('invalid_release_tag');
+      }
+      return tag;
+    } finally {
+      httpClient.close();
+    }
+  }
+
   /// Downloads a remote asset to [filePath] and emits byte progress updates.
   static Future<void> downloadToFile(
     String url,

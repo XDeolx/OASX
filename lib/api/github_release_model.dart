@@ -53,6 +53,31 @@ class GithubReleaseModel extends BaseNetModel {
     this.assets,
   });
 
+  /// Creates the minimal release metadata available from the HTML fallback.
+  factory GithubReleaseModel.fromTagFallback({
+    required String tag,
+    required String releaseBaseUrl,
+  }) {
+    final normalizedBase = releaseBaseUrl.endsWith('/')
+        ? releaseBaseUrl.substring(0, releaseBaseUrl.length - 1)
+        : releaseBaseUrl;
+    final encodedTag = Uri.encodeComponent(tag);
+    final assetName = 'oasx_${tag}_windows.zip';
+    final encodedAssetName = Uri.encodeComponent(assetName);
+    return GithubReleaseModel(
+      version: tag,
+      releasePageUrl: '$normalizedBase/tag/$encodedTag',
+      assets: [
+        GithubReleaseAssetModel(
+          name: assetName,
+          downloadUrl:
+              '$normalizedBase/download/$encodedTag/$encodedAssetName',
+          contentType: 'application/zip',
+        ),
+      ],
+    );
+  }
+
   /// Deserializes the GitHub latest release payload.
   GithubReleaseModel.fromJson(dynamic json) {
     version = json['tag_name'] as String?;

@@ -2,9 +2,14 @@
 
 本文件只记录 `XDeolx/OASX` 的 `testoyj` 分支改动，独立于上游 `CHANGELOG.md`、README 和许可证。
 
-当前版本：`testoyj-v1.0.0`
+当前版本：`testoyj-v1.0.1`
 
 ## 2026-08-31
+
+### 更新检查限流回退
+
+- GitHub API 返回 `403/429` 或连接失败时，自动改用普通 Release 跳转地址识别最新版本。
+- 备用通道不消耗 GitHub API 匿名额度，并可继续定位和下载对应的 Windows ZIP 更新包。
 
 ### 首个正式版本
 

@@ -237,6 +237,7 @@ class AppUpdateService extends GetxService {
   /// Fetches the latest release through proxy when configured, otherwise direct.
   Future<ApiResult<GithubReleaseModel>> _fetchLatestReleaseResult() async {
     final proxyUrl = _readProxyUrl();
+    Object? primaryError;
     try {
       final json = await UpdatePackageIo.fetchJsonMap(
         updateUrlGithub,
@@ -244,14 +245,32 @@ class AppUpdateService extends GetxService {
       );
       final release = GithubReleaseModel.fromJson(json);
       if (!release.isValid) {
-        return ApiResult<GithubReleaseModel>.failure(
-          'invalid_release_payload',
-        );
+        throw const FormatException('invalid_release_payload');
       }
       return ApiResult<GithubReleaseModel>.success(release);
     } catch (error) {
-      final message = error is HttpException ? error.message : error.toString();
-      return ApiResult<GithubReleaseModel>.failure(message);
+      primaryError = error;
+    }
+    try {
+      final tag = await UpdatePackageIo.fetchLatestReleaseTag(
+        updateFallbackUrlGithub,
+        proxyUrl: proxyUrl.isEmpty ? null : proxyUrl,
+      );
+      final release = GithubReleaseModel.fromTagFallback(
+        tag: tag,
+        releaseBaseUrl: oasxRelease,
+      );
+      return ApiResult<GithubReleaseModel>.success(release);
+    } catch (fallbackError) {
+      final primaryMessage = primaryError is HttpException
+          ? primaryError.message
+          : primaryError.toString();
+      final fallbackMessage = fallbackError is HttpException
+          ? fallbackError.message
+          : fallbackError.toString();
+      return ApiResult<GithubReleaseModel>.failure(
+        '$primaryMessage; fallback_failed: $fallbackMessage',
+      );
     }
   }
 

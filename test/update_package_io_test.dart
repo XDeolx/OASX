@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:oasx/api/github_release_model.dart';
 import 'package:oasx/service/app_update/update_package_io.dart';
 
 void main() {
@@ -62,5 +63,47 @@ void main() {
       ),
     );
     await requestHandled;
+  });
+
+  test('fetchLatestReleaseTag parses a relative GitHub redirect', () async {
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    addTearDown(() => server.close(force: true));
+
+    final requestHandled = server.first.then((request) async {
+      expect(request.headers.value(HttpHeaders.userAgentHeader), 'OASX-Updater');
+      request.response.statusCode = HttpStatus.found;
+      request.response.headers.set(
+        HttpHeaders.locationHeader,
+        '/XDeolx/OASX/releases/tag/testoyj-v1.0.1',
+      );
+      await request.response.close();
+    });
+
+    final tag = await UpdatePackageIo.fetchLatestReleaseTag(
+      'http://${server.address.host}:${server.port}/releases/latest',
+    );
+
+    await requestHandled;
+    expect(tag, 'testoyj-v1.0.1');
+  });
+
+  test('fallback release metadata points to the versioned Windows zip', () {
+    final release = GithubReleaseModel.fromTagFallback(
+      tag: 'testoyj-v1.0.1',
+      releaseBaseUrl: 'https://github.com/XDeolx/OASX/releases',
+    );
+
+    expect(release.version, 'testoyj-v1.0.1');
+    expect(
+      release.releasePageUrl,
+      'https://github.com/XDeolx/OASX/releases/tag/testoyj-v1.0.1',
+    );
+    expect(release.assets, hasLength(1));
+    expect(release.assets!.single.name, 'oasx_testoyj-v1.0.1_windows.zip');
+    expect(
+      release.assets!.single.downloadUrl,
+      'https://github.com/XDeolx/OASX/releases/download/'
+      'testoyj-v1.0.1/oasx_testoyj-v1.0.1_windows.zip',
+    );
   });
 }
