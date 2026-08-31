@@ -336,6 +336,8 @@ final Map<String, String> _cn_ui = {
   I18n.homeQuickWaitAll: '全部立即等待',
   I18n.homeBulkQuickScheduleTimedOut: '批量快捷调度仍在执行，已恢复操作状态',
   I18n.homeOpenTaskParams: '编辑',
+  I18n.chessTestNotice:
+      '当前为新版百鬼棋局测试实现；如运行不稳定，请将 OAS 切换到 testoyj-chess-legacy 分支使用旧版。',
   I18n.homeTaskConfigureAndEnable: '配置并启用',
   I18n.homeTaskSelectPrompt: '请先从任务列表中选择任务',
   I18n.homeRealtimeLog: '实时日志',

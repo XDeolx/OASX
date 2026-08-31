@@ -316,6 +316,7 @@ class I18n {
       homeQuickWaitAll = 'home_quick_wait_all',
       homeBulkQuickScheduleTimedOut = 'home_bulk_quick_schedule_timed_out',
       homeOpenTaskParams = 'home_open_task_params',
+      chessTestNotice = 'chess_test_notice',
       homeTaskConfigureAndEnable = 'home_task_configure_and_enable';
   static const String homeTaskSelectPrompt = 'home_task_select_prompt',
       homeRealtimeLog = 'home_realtime_log',
