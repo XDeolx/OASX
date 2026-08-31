@@ -909,12 +909,15 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           ),
         ),
         const SizedBox(height: 10),
+        KeyedSubtree(
+          key: const ValueKey<String>('weekly-schedule-coverage'),
+          child: _buildCoverage(),
+        ),
+        const Divider(height: 20),
         Expanded(
           child: ListView(
             key: const PageStorageKey<String>('weekly-schedule-list'),
             children: [
-              _buildCoverage(),
-              const Divider(height: 20),
               if (visibleEntries.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 36),

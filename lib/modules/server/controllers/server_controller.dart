@@ -367,11 +367,11 @@ class ServerController extends GetxController with LogMixin {
                 .refreshAfterExternalConnected();
           } else if (Get.isRegistered<ScriptService>()) {
             await Get.find<ScriptService>().reloadFromServer();
+            await Get.find<LocaleService>().refreshTransFromRemote();
           }
         } catch (_) {
           // Keep navigation behavior even if dashboard refresh fails here.
         }
-        await Get.find<LocaleService>().refreshTransFromRemote();
         Get.offAllNamed('/home');
         return true;
       }

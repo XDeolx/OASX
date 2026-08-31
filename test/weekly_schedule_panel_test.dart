@@ -63,6 +63,14 @@ void main() {
     expect(primary, findsOneWidget);
     expect(modes, findsOneWidget);
     expect(actions, findsOneWidget);
+    final coverage = find.byKey(
+      const ValueKey<String>('weekly-schedule-coverage'),
+    );
+    expect(coverage, findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(ListView), matching: coverage),
+      findsNothing,
+    );
     expect(
       tester.getTopLeft(modes).dy,
       greaterThan(tester.getTopLeft(primary).dy),

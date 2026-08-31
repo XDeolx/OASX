@@ -121,6 +121,7 @@ class HomeDashboardController extends GetxController {
   final isStartupConnectionFailed = false.obs;
   final isStartupAutoDeploying = false.obs;
   final startupLoadingMessage = ''.obs;
+  final backendDataRevision = 0.obs;
   final isLinkModeEnabled = false.obs;
   final linkedScriptList = <String>[].obs;
   final searchQuery = ''.obs;
@@ -155,6 +156,7 @@ class HomeDashboardController extends GetxController {
         syncWorkspaceState();
       },
     );
+    _scriptService.onBackendReconnected = refreshAfterBackendReconnect;
     super.onInit();
   }
 

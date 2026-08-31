@@ -57,6 +57,7 @@ class ActiveConfigPanel extends StatelessWidget {
         child: Obx(() {
           final script = controller.activeScriptModel;
           final currentTab = controller.displayedWorkbenchTabFor(layoutMode);
+          final backendRevision = controller.backendDataRevision.value;
           final tabs = controller.workbenchTabsFor(layoutMode);
           if (script == null) {
             return Center(child: Text(I18n.homeNoScriptSelected.tr));
@@ -141,7 +142,13 @@ class ActiveConfigPanel extends StatelessWidget {
                     .toList(),
               ),
               const SizedBox(height: 12),
-              Expanded(child: _buildTabContent(script, currentTab)),
+              Expanded(
+                child: _buildTabContent(
+                  script,
+                  currentTab,
+                  backendRevision,
+                ),
+              ),
             ],
           );
         }),
@@ -149,7 +156,11 @@ class ActiveConfigPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildTabContent(ScriptModel script, HomeWorkbenchTab currentTab) {
+  Widget _buildTabContent(
+    ScriptModel script,
+    HomeWorkbenchTab currentTab,
+    int backendRevision,
+  ) {
     return switch (currentTab) {
       HomeWorkbenchTab.status => TaskStatusPanel(
         controller: controller,
@@ -163,6 +174,9 @@ class ActiveConfigPanel extends StatelessWidget {
             onOpenTask(taskName, HomeTaskParameterEntrySource.overview),
       ),
       HomeWorkbenchTab.tasks => TaskCatalogPanel(
+        key: ValueKey<String>(
+          'task-catalog-${script.name}-$backendRevision',
+        ),
         controller: controller,
         scriptModel: script,
         onOpenTask: (taskName) =>
@@ -171,6 +185,9 @@ class ActiveConfigPanel extends StatelessWidget {
         onQuickWait: onQuickWait,
       ),
       HomeWorkbenchTab.weeklySchedule => WeeklySchedulePanel(
+        key: ValueKey<String>(
+          'weekly-schedule-${script.name}-$backendRevision',
+        ),
         scriptName: script.name,
       ),
       HomeWorkbenchTab.stats => const ScriptStatisticsPanel(),

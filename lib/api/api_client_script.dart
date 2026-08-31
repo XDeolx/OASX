@@ -2,7 +2,12 @@ part of 'api_client.dart';
 
 extension ApiClientScriptX on ApiClient {
   Future<WeeklyScheduleData?> getWeeklySchedule(String scriptName) async {
-    final res = await request(() => get('/$scriptName/weekly_schedule'));
+    final res = await request(
+      () => get(
+        '/$scriptName/weekly_schedule',
+        options: _backendNoCacheOptions(),
+      ),
+    );
     if (!res.isSuccess || res.data is! Map) {
       return null;
     }
@@ -66,7 +71,12 @@ extension ApiClientScriptX on ApiClient {
     String scriptName,
     String taskName,
   ) async {
-    final res = await request(() => get('/$scriptName/$taskName/args'));
+    final res = await request(
+      () => get(
+        '/$scriptName/$taskName/args',
+        options: _backendNoCacheOptions(),
+      ),
+    );
     return res.data ?? {};
   }
 

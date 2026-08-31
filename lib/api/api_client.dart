@@ -220,12 +220,25 @@ class ApiClient {
   }
 
   Future<Map<String, Map<String, String>>> getAdditionalTranslate() async {
-    final res = await request(() => get('/home/additional_translate'));
+    final res = await request(
+      () => get(
+        '/home/additional_translate',
+        options: _backendNoCacheOptions(),
+      ),
+    );
     final result = <String, Map<String, String>>{};
     if (res.isSuccess) {
       result['zh_CN'] = (res.data['zh-CN'] as Map).cast<String, String>();
       result['en_US'] = (res.data['en-US'] as Map).cast<String, String>();
     }
     return result;
+  }
+
+  Options _backendNoCacheOptions() {
+    final cacheOptions = _cacheOptions.copyWith(policy: CachePolicy.noCache);
+    return Options(
+      extra: cacheOptions.toExtra(),
+      headers: const {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'},
+    );
   }
 }

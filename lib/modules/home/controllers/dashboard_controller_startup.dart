@@ -36,7 +36,20 @@ extension HomeDashboardStartupX on HomeDashboardController {
     }
     isStartupChecking.value = true;
     try {
-      await _refreshScriptsAfterConnected(triggerAutoRun: true);
+      await _refreshBackendAfterConnected(triggerAutoRun: true);
+    } finally {
+      isStartupChecking.value = false;
+      startupLoadingMessage.value = '';
+    }
+  }
+
+  Future<void> refreshAfterBackendReconnect() async {
+    if (isStartupChecking.value || !await ApiClient().testAddress()) {
+      return;
+    }
+    isStartupChecking.value = true;
+    try {
+      await _refreshBackendAfterConnected(triggerAutoRun: false);
     } finally {
       isStartupChecking.value = false;
       startupLoadingMessage.value = '';
@@ -68,8 +81,7 @@ extension HomeDashboardStartupX on HomeDashboardController {
       startupLoadingMessage.value = I18n.homeLoadingAutoLogin;
       final connected = await ApiClient().testAddress();
       if (connected) {
-        await _refreshScriptsAfterConnected(triggerAutoRun: triggerAutoRun);
-        await _refreshTranslationsAfterLogin();
+        await _refreshBackendAfterConnected(triggerAutoRun: triggerAutoRun);
         return;
       }
 
@@ -102,8 +114,7 @@ extension HomeDashboardStartupX on HomeDashboardController {
       startupLoadingMessage.value = I18n.homeLoadingAutoLogin;
       final connectedAfterDeploy = await _waitForAddressConnected();
       if (connectedAfterDeploy) {
-        await _refreshScriptsAfterConnected(triggerAutoRun: triggerAutoRun);
-        await _refreshTranslationsAfterLogin();
+        await _refreshBackendAfterConnected(triggerAutoRun: triggerAutoRun);
         return;
       }
 
@@ -114,12 +125,15 @@ extension HomeDashboardStartupX on HomeDashboardController {
     }
   }
 
-  Future<void> _refreshScriptsAfterConnected({
+  Future<void> _refreshBackendAfterConnected({
     required bool triggerAutoRun,
   }) async {
     isStartupConnectionFailed.value = false;
     startupLoadingMessage.value = I18n.homeLoadingConfigDetail;
     await _scriptService.reloadFromServer();
+    await _refreshTranslationsAfterLogin();
+    _taskAvailabilityCache.clear();
+    backendDataRevision.value++;
 
     if (!triggerAutoRun) {
       return;

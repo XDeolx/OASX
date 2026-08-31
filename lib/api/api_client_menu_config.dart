@@ -2,7 +2,9 @@ part of 'api_client.dart';
 
 extension ApiClientMenuConfigX on ApiClient {
   Future<Map<String, List<String>>> getScriptMenu() async {
-    final res = await request(() => get('/script_menu'));
+    final res = await request(
+      () => get('/script_menu', options: _backendNoCacheOptions()),
+    );
     return _asMenuMap(res.data);
   }
 
@@ -17,7 +19,9 @@ extension ApiClientMenuConfigX on ApiClient {
   }
 
   Future<List<String>> getScriptList() async {
-    final res = await request(() => get('/config_list'));
+    final res = await request(
+      () => get('/config_list', options: _backendNoCacheOptions()),
+    );
     return _asStringList(res.data);
   }
 
