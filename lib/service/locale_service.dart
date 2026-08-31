@@ -1,8 +1,38 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:oasx/api/api_client.dart';
 import 'package:oasx/modules/common/models/storage_key.dart';
+import 'package:oasx/translation/i18n.dart';
+import 'package:oasx/translation/i18n_content.dart';
+
+/// Keeps local test-version labels from being replaced by an older OAS server.
+@visibleForTesting
+Map<String, Map<String, String>> protectBundledChessTestTranslations(
+  Map<String, Map<String, String>> remoteTranslations,
+) {
+  final merged = <String, Map<String, String>>{
+    for (final entry in remoteTranslations.entries)
+      entry.key: Map<String, String>.from(entry.value),
+  };
+  final bundledTranslations = Messages().keys;
+  for (final locale in const ['zh_CN', 'en_US']) {
+    final bundledLocale = bundledTranslations[locale];
+    if (bundledLocale == null) {
+      continue;
+    }
+    final targetLocale =
+        merged.putIfAbsent(locale, () => <String, String>{});
+    for (final key in ['Chess', I18n.chessTestNotice]) {
+      final value = bundledLocale[key];
+      if (value != null && value.isNotEmpty) {
+        targetLocale[key] = value;
+      }
+    }
+  }
+  return merged;
+}
 
 class LocaleService extends GetxService {
   final _storage = GetStorage();
@@ -41,7 +71,9 @@ class LocaleService extends GetxService {
   }
 
   Future<void> refreshTransFromRemote() async {
-    final additionalTrans = await ApiClient().getAdditionalTranslate();
+    final additionalTrans = protectBundledChessTestTranslations(
+      await ApiClient().getAdditionalTranslate(),
+    );
     Get.appendTranslations(additionalTrans);
     _updateLocale(language.value);
   }

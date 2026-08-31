@@ -20,6 +20,7 @@ final Map<String, String> _us_ui = {
   I18n.waiting: 'Waiting',
   I18n.stop: 'Stopped',
   I18n.warning: 'Warning',
+  'Chess': 'Chess (Test)',
   I18n.chessTestNotice:
       'This is the new Chess test implementation. If it is unstable, switch OAS to the testoyj-chess-legacy branch to use the previous version.',
   I18n.connecting: 'Connecting',
