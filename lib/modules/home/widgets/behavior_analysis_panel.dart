@@ -29,7 +29,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
         return _BehaviorPlaceholder(
           loading: loading,
           message: _resolvePlaceholder(dates),
-          onRefresh: controller.refresh,
+          onRefresh: controller.refreshAnalysis,
         );
       }
       return _buildAnalysis(context, analysis, dates);
@@ -86,7 +86,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
               tooltip: I18n.behaviorAnalysisRefresh.tr,
               onPressed: controller.analysisLoading.value
                   ? null
-                  : controller.refresh,
+                  : controller.refreshAnalysis,
               icon: controller.analysisLoading.value
                   ? const SizedBox.square(
                       dimension: 18,

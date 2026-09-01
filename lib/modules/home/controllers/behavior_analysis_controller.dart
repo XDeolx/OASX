@@ -79,7 +79,7 @@ class HomeBehaviorAnalysisController extends GetxController {
     await _bootstrapForScript(scriptName);
   }
 
-  Future<void> refresh() async {
+  Future<void> refreshAnalysis() async {
     final scriptName = dashboardController.activeScriptName.value.trim();
     if (scriptName.isEmpty ||
         !dashboardController.isBehaviorAnalysisVisibleInCurrentLayout) {
