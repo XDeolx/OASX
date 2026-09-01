@@ -21,4 +21,21 @@ void main() {
       isFalse,
     );
   });
+
+  test('behavior analysis is placed after logs and statistics', () {
+    final tabs = resolveHomeWorkbenchTabs(HomeWorkbenchLayoutMode.twoPane);
+    expect(tabs.sublist(tabs.length - 3), [
+      HomeWorkbenchTab.logs,
+      HomeWorkbenchTab.stats,
+      HomeWorkbenchTab.behaviorAnalysis,
+    ]);
+    expect(
+      resolveHomeWorkbenchSidebarTabs(HomeWorkbenchLayoutMode.threePane),
+      [
+        HomeWorkbenchTab.logs,
+        HomeWorkbenchTab.stats,
+        HomeWorkbenchTab.behaviorAnalysis,
+      ],
+    );
+  });
 }

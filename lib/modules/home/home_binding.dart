@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:oasx/modules/home/controllers/dashboard_controller.dart';
 import 'package:oasx/modules/home/controllers/statistics_controller.dart';
+import 'package:oasx/modules/home/controllers/behavior_analysis_controller.dart';
 import 'package:oasx/modules/args/index.dart';
 
 class HomeBinding extends Bindings {
@@ -16,6 +17,12 @@ class HomeBinding extends Bindings {
     if (!Get.isRegistered<HomeStatisticsController>()) {
       Get.put<HomeStatisticsController>(HomeStatisticsController(),
           permanent: true);
+    }
+    if (!Get.isRegistered<HomeBehaviorAnalysisController>()) {
+      Get.put<HomeBehaviorAnalysisController>(
+        HomeBehaviorAnalysisController(),
+        permanent: true,
+      );
     }
   }
 }
