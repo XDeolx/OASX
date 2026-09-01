@@ -39,6 +39,20 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        AppVersionUtils.compareVersion(
+          'v1.0.4',
+          'testoyj-v1.0.4.1',
+        ),
+        isTrue,
+      );
+      expect(
+        AppVersionUtils.compareVersion(
+          'v1.0.4.1',
+          'testoyj-v1.0.5',
+        ),
+        isTrue,
+      );
     });
 
     test('formats legacy and stable installed versions', () {
@@ -59,9 +73,16 @@ void main() {
       expect(
         AppVersionUtils.formatInstalledVersion(
           version: '1.0.0',
-          buildNumber: '1',
+          buildNumber: '0',
         ),
         'v1.0.0',
+      );
+      expect(
+        AppVersionUtils.formatInstalledVersion(
+          version: '1.0.4',
+          buildNumber: '1',
+        ),
+        'v1.0.4.1',
       );
     });
   });

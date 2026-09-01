@@ -300,6 +300,8 @@ final Map<String, String> _us_ui = {
   I18n.behaviorAnalysisPrivacyNotice:
       'Privacy: OASX reads and analyzes this data only on this device. It is not linked to game accounts and is never uploaded. Results belong only to the current configuration log; if one configuration is used for multiple accounts, the combined log is shown and individual accounts cannot be distinguished.',
   I18n.behaviorAnalysisRefresh: 'Reload and analyze log',
+  I18n.behaviorAnalysisTaskFilter: 'Task filter',
+  I18n.behaviorAnalysisAllTasks: 'All tasks',
   I18n.behaviorAnalysisClickCount: 'clicks',
   I18n.behaviorAnalysisWaitCount: 'random waits',
   I18n.behaviorAnalysisTaskCount: 'tasks with clicks',

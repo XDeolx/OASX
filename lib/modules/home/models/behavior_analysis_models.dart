@@ -180,6 +180,58 @@ class BehaviorAnalysisDay {
 
   int get totalClicks => clicks.length;
 
+  List<String> get taskNames {
+    final names = <String>{
+      ...clicks.map((event) => event.taskName),
+      ...randomWaitEvents.map((event) => event.taskName),
+      ...taskStarts.map((event) => event.taskName),
+      ...taskRuns.map((event) => event.taskName),
+      ...anomalies.map((event) => event.taskName),
+    }..removeWhere((name) => name.trim().isEmpty);
+    return names.toList(growable: false)..sort();
+  }
+
+  BehaviorAnalysisDay filteredByTask(String taskName) {
+    if (taskName.isEmpty) {
+      return this;
+    }
+    final filteredClicks = clicks
+        .where((event) => event.taskName == taskName)
+        .toList(growable: false);
+    final filteredWaitEvents = randomWaitEvents
+        .where((event) => event.taskName == taskName)
+        .toList(growable: false);
+    final filteredWaits = <String, List<double>>{};
+    for (final event in filteredWaitEvents) {
+      filteredWaits
+          .putIfAbsent(event.label, () => <double>[])
+          .add(event.delaySeconds);
+    }
+    final durations = taskClickDurations[taskName];
+    return BehaviorAnalysisDay(
+      scriptName: scriptName,
+      dateKey: dateKey,
+      clicks: filteredClicks,
+      randomWaits: filteredWaits,
+      randomWaitEvents: filteredWaitEvents,
+      taskClickDurations: durations == null
+          ? const {}
+          : {
+              taskName: List<double>.unmodifiable(durations),
+            },
+      taskStarts: taskStarts
+          .where((event) => event.taskName == taskName)
+          .toList(growable: false),
+      taskRuns: taskRuns
+          .where((event) => event.taskName == taskName)
+          .toList(growable: false),
+      scriptStarts: const [],
+      anomalies: anomalies
+          .where((event) => event.taskName == taskName)
+          .toList(growable: false),
+    );
+  }
+
   bool get isEmpty =>
       clicks.isEmpty &&
       randomWaitEvents.isEmpty &&

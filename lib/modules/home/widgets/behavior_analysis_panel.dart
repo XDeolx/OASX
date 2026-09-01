@@ -41,46 +41,85 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
     BehaviorAnalysisDay analysis,
     List<String> dates,
   ) {
-    final taskNames = analysis.taskClickDurations.entries
-        .where((entry) => entry.value.isNotEmpty)
-        .map((entry) => entry.key)
-        .toList()
-      ..sort((left, right) => left.compareTo(right));
-    final selectedTask = taskNames.contains(_selectedTaskName)
-        ? _selectedTaskName
-        : (taskNames.isEmpty ? '' : taskNames.first);
-    _selectedTaskName = selectedTask;
-    final durationValues =
-        analysis.taskClickDurations[selectedTask] ?? const <double>[];
-    final allWaitCount = analysis.randomWaits.values
+    final taskNames = analysis.taskNames;
+    if (_selectedTaskName.isNotEmpty &&
+        !taskNames.contains(_selectedTaskName)) {
+      _selectedTaskName = '';
+    }
+    final filteredAnalysis = analysis.filteredByTask(_selectedTaskName);
+    final durationValues = filteredAnalysis.taskClickDurations.values
+        .expand((values) => values)
+        .toList(growable: false);
+    final allWaitCount = filteredAnalysis.randomWaits.values
         .fold<int>(0, (total, values) => total + values.length);
+    final tasksWithClicks = filteredAnalysis.clicks
+        .map((event) => event.taskName)
+        .toSet()
+        .length;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
       children: [
         _PrivacyNotice(),
         const SizedBox(height: 12),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 12,
-          runSpacing: 8,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            DropdownButton<String>(
-              value: controller.selectedDateKey.value,
-              items: dates
-                  .map(
-                    (date) => DropdownMenuItem<String>(
-                      value: date,
-                      child: Text(date),
-                    ),
-                  )
-                  .toList(growable: false),
-              onChanged: (value) {
-                if (value != null) {
-                  controller.selectDate(value);
-                }
-              },
+            Expanded(
+              child: Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 16,
+                runSpacing: 8,
+                children: [
+                  _AnalysisSelector(
+                    icon: Icons.calendar_today_outlined,
+                    tooltip: I18n.behaviorAnalysisTime.tr,
+                    value: controller.selectedDateKey.value,
+                    items: dates
+                        .map(
+                          (date) => DropdownMenuItem<String>(
+                            value: date,
+                            child: Text(date),
+                          ),
+                        )
+                        .toList(growable: false),
+                    onChanged: (value) {
+                      if (value != null) {
+                        controller.selectDate(value);
+                      }
+                    },
+                  ),
+                  _AnalysisSelector(
+                    icon: Icons.filter_alt_outlined,
+                    tooltip: I18n.behaviorAnalysisTaskFilter.tr,
+                    value: _selectedTaskName,
+                    items: [
+                      DropdownMenuItem<String>(
+                        value: '',
+                        child: Text(I18n.behaviorAnalysisAllTasks.tr),
+                      ),
+                      ...taskNames.map(
+                        (name) => DropdownMenuItem<String>(
+                          value: name,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 200),
+                            child: Text(
+                              name.tr,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() => _selectedTaskName = value);
+                      }
+                    },
+                  ),
+                ],
+              ),
             ),
             IconButton(
               tooltip: I18n.behaviorAnalysisRefresh.tr,
@@ -102,7 +141,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
           runSpacing: 8,
           children: [
             _SummaryValue(
-              value: analysis.totalClicks.toString(),
+              value: filteredAnalysis.totalClicks.toString(),
               label: I18n.behaviorAnalysisClickCount.tr,
             ),
             _SummaryValue(
@@ -110,7 +149,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
               label: I18n.behaviorAnalysisWaitCount.tr,
             ),
             _SummaryValue(
-              value: taskNames.length.toString(),
+              value: tasksWithClicks.toString(),
               label: I18n.behaviorAnalysisTaskCount.tr,
             ),
           ],
@@ -131,49 +170,22 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
           ),
         ),
         const SizedBox(height: 8),
-        if (analysis.clicks.isEmpty)
+        if (filteredAnalysis.clicks.isEmpty)
           _EmptySection(message: I18n.behaviorAnalysisNoClicks.tr)
         else
           BehaviorClickPathChart(
-            points: analysis.clicks,
+            points: filteredAnalysis.clicks,
             showPath: controller.showClickPath.value,
           ),
         const SizedBox(height: 22),
         _SectionHeader(title: I18n.behaviorAnalysisRandomWaits.tr),
         const SizedBox(height: 8),
-        if (analysis.randomWaitEvents.isEmpty)
+        if (filteredAnalysis.randomWaitEvents.isEmpty)
           _EmptySection(message: I18n.behaviorAnalysisNoWaits.tr)
         else
-          BehaviorRandomWaitChart(events: analysis.randomWaitEvents),
+          BehaviorRandomWaitChart(events: filteredAnalysis.randomWaitEvents),
         const SizedBox(height: 22),
-        _SectionHeader(
-          title: I18n.behaviorAnalysisTaskDurations.tr,
-          trailing: taskNames.isEmpty
-              ? null
-              : DropdownButton<String>(
-                  value: selectedTask,
-                  items: taskNames
-                      .map(
-                        (name) => DropdownMenuItem<String>(
-                          value: name,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 180),
-                            child: Text(
-                              name.tr,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                      )
-                      .toList(growable: false),
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() => _selectedTaskName = value);
-                    }
-                  },
-                ),
-        ),
+        _SectionHeader(title: I18n.behaviorAnalysisTaskDurations.tr),
         const SizedBox(height: 8),
         if (durationValues.isEmpty)
           _EmptySection(message: I18n.behaviorAnalysisNoDurations.tr)
@@ -191,17 +203,17 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
         const SizedBox(height: 22),
         _SectionHeader(title: I18n.behaviorAnalysisTimeline.tr),
         const SizedBox(height: 8),
-        if (analysis.taskRuns.isEmpty &&
-            analysis.scriptStarts.isEmpty &&
-            analysis.anomalies.isEmpty)
+        if (filteredAnalysis.taskRuns.isEmpty &&
+            filteredAnalysis.scriptStarts.isEmpty &&
+            filteredAnalysis.anomalies.isEmpty)
           _EmptySection(message: I18n.behaviorAnalysisNoTimeline.tr)
         else
           BehaviorTimelineChart(
-            dateKey: analysis.dateKey,
-            taskStarts: analysis.taskStarts,
-            taskRuns: analysis.taskRuns,
-            scriptStarts: analysis.scriptStarts,
-            anomalies: analysis.anomalies,
+            dateKey: filteredAnalysis.dateKey,
+            taskStarts: filteredAnalysis.taskStarts,
+            taskRuns: filteredAnalysis.taskRuns,
+            scriptStarts: filteredAnalysis.scriptStarts,
+            anomalies: filteredAnalysis.anomalies,
           ),
       ],
     );
@@ -236,6 +248,41 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
     return sorted.length.isOdd
         ? sorted[middle]
         : (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+}
+
+class _AnalysisSelector extends StatelessWidget {
+  const _AnalysisSelector({
+    required this.icon,
+    required this.tooltip,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final String value;
+  final List<DropdownMenuItem<String>> items;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 17),
+          const SizedBox(width: 7),
+          DropdownButton<String>(
+            value: value,
+            items: items,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
   }
 }
 

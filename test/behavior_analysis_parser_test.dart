@@ -119,4 +119,36 @@ void main() {
     expect(analysis.taskRuns.single.endTime, DateTime(2026, 9, 1, 2, 16));
     expect(analysis.taskRuns.single.endInferred, isTrue);
   });
+
+  test('filters every task-scoped behavior collection together', () {
+    const content = '''
+2026-09-01 03:00:00.000 | INFO | Start scheduler loop: 冲
+2026-09-01 03:01:00.000 | INFO | Scheduler: Start task `RealmRaid`
+2026-09-01 03:01:01.000 | INFO | [0.12s] Click ( 100, 200) @ RAID_TARGET
+2026-09-01 03:01:02.000 | INFO | 个人突破随机等待: delay=1.25s
+2026-09-01 03:01:03.000 | WARNING | Restart ATX
+2026-09-01 03:02:00.000 | INFO | Scheduler: End task `RealmRaid`
+2026-09-01 03:03:00.000 | INFO | Scheduler: Start task `Chess`
+2026-09-01 03:03:01.000 | INFO | [0.18s] Click ( 300, 400) @ CHESS_TARGET
+2026-09-01 03:04:00.000 | INFO | Scheduler: End task `Chess`
+''';
+
+    final analysis = BehaviorAnalysisDay.fromMap(parseBehaviorLogPayload({
+      'script_name': '冲',
+      'date': '2026-09-01',
+      'content': content,
+    }));
+    final filtered = analysis.filteredByTask('RealmRaid');
+
+    expect(analysis.taskNames, ['Chess', 'RealmRaid']);
+    expect(filtered.clicks, hasLength(1));
+    expect(filtered.clicks.single.label, 'RAID_TARGET');
+    expect(filtered.randomWaitEvents, hasLength(1));
+    expect(filtered.randomWaits.values.single, [1.25]);
+    expect(filtered.taskClickDurations.keys, ['RealmRaid']);
+    expect(filtered.taskStarts.single.taskName, 'RealmRaid');
+    expect(filtered.taskRuns.single.taskName, 'RealmRaid');
+    expect(filtered.anomalies.single.taskName, 'RealmRaid');
+    expect(filtered.scriptStarts, isEmpty);
+  });
 }

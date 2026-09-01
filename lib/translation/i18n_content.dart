@@ -338,7 +338,9 @@ class I18n {
       homeLogScrollToBottom = 'home_log_scroll_to_bottom';
   static const String behaviorAnalysisTab = 'behavior_analysis_tab',
       behaviorAnalysisPrivacyNotice = 'behavior_analysis_privacy_notice',
-      behaviorAnalysisRefresh = 'behavior_analysis_refresh';
+      behaviorAnalysisRefresh = 'behavior_analysis_refresh',
+      behaviorAnalysisTaskFilter = 'behavior_analysis_task_filter',
+      behaviorAnalysisAllTasks = 'behavior_analysis_all_tasks';
   static const String behaviorAnalysisClickCount = 'behavior_analysis_click_count',
       behaviorAnalysisWaitCount = 'behavior_analysis_wait_count',
       behaviorAnalysisTaskCount = 'behavior_analysis_task_count';

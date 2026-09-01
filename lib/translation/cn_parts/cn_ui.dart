@@ -361,6 +361,8 @@ final Map<String, String> _cn_ui = {
   I18n.behaviorAnalysisPrivacyNotice:
       '隐私声明：所有数据仅由 OASX 在本机读取和分析，不关联游戏账号，也不会通过网络上传。分析结果只对应当前配置的日志文件；若一份配置切换使用多个账号，将显示该配置日志的整体行为，无法区分具体账号。',
   I18n.behaviorAnalysisRefresh: '重新读取并分析日志',
+  I18n.behaviorAnalysisTaskFilter: '分析任务',
+  I18n.behaviorAnalysisAllTasks: '全部任务',
   I18n.behaviorAnalysisClickCount: '点击',
   I18n.behaviorAnalysisWaitCount: '随机等待',
   I18n.behaviorAnalysisTaskCount: '有点击的任务',

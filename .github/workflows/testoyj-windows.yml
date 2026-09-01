@@ -106,7 +106,7 @@ jobs:
         run: |
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and
               $env:GITHUB_REF_NAME -match '^testoyj-v(\d+\.\d+\.\d+)(?:\.(\d+))?$') {
-            $buildNumber = if ($Matches[2]) { $Matches[2] } else { '1' }
+            $buildNumber = if ($Matches[2]) { $Matches[2] } else { '0' }
             flutter build windows --release `
               --build-name $Matches[1] `
               --build-number $buildNumber

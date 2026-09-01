@@ -43,10 +43,6 @@ class AppVersionUtils {
   }) {
     final normalizedVersion = version.trim().split('-').first;
     final normalizedBuild = buildNumber.trim();
-    final majorVersion = int.tryParse(normalizedVersion.split('.').first) ?? 0;
-    if (majorVersion >= 1) {
-      return 'v$normalizedVersion';
-    }
     if (normalizedBuild.isEmpty || normalizedBuild == '0') {
       return 'v$normalizedVersion';
     }
