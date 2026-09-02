@@ -57,6 +57,7 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
   bool _previewing = false;
   bool _saving = false;
   bool _useUnifiedBoundaries = true;
+  int _previewWeekday = DateTime.monday;
 
   @override
   void initState() {
@@ -395,30 +396,68 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
       for (final issue in preview.issues)
         _entryKey(issue.task, issue.weekday): issue,
     };
-    return ListView.builder(
-      itemCount: preview.entries.length,
-      itemBuilder: (context, index) {
-        final entry = preview.entries[index];
-        final key = _entryKey(entry.task, entry.weekday);
-        final baseTime = baseByKey[key] ?? entry.time;
-        final hasIssue = issuesByKey.containsKey(key);
-        return ListTile(
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          leading: Icon(
-            hasIssue ? Icons.warning_amber_rounded : Icons.schedule_rounded,
-            color: hasIssue ? Theme.of(context).colorScheme.error : null,
+    final entries = preview.entries
+        .where((entry) => entry.weekday == _previewWeekday)
+        .toList();
+    return Column(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: List.generate(7, (index) {
+              final weekday = index + 1;
+              return Padding(
+                padding: EdgeInsets.only(right: index == 6 ? 0 : 8),
+                child: ChoiceChip(
+                  label: Text(widget.weekdayLabel(weekday)),
+                  selected: _previewWeekday == weekday,
+                  onSelected: (_) {
+                    setState(() => _previewWeekday = weekday);
+                  },
+                ),
+              );
+            }),
           ),
-          title: Text(entry.task.tr),
-          subtitle: Text(
-            hasIssue
-                ? '${widget.weekdayLabel(entry.weekday)}  |  '
-                    '${I18n.weeklyRefreshNoCandidate.tr}'
-                : widget.weekdayLabel(entry.weekday),
+        ),
+        const SizedBox(height: 8),
+        Expanded(
+          child: ListView(
+            children: [
+              for (final entry in entries)
+                _buildPreviewEntry(
+                  entry: entry,
+                  baseTime: baseByKey[_entryKey(entry.task, entry.weekday)] ??
+                      entry.time,
+                  hasIssue: issuesByKey.containsKey(
+                    _entryKey(entry.task, entry.weekday),
+                  ),
+                ),
+            ],
           ),
-          trailing: Text('$baseTime  ->  ${entry.time}'),
-        );
-      },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPreviewEntry({
+    required WeeklyScheduleEntry entry,
+    required String baseTime,
+    required bool hasIssue,
+  }) {
+    return ListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      leading: Icon(
+        hasIssue ? Icons.warning_amber_rounded : Icons.schedule_rounded,
+        color: hasIssue ? Theme.of(context).colorScheme.error : null,
+      ),
+      title: Text(entry.task.tr),
+      subtitle: Text(
+        hasIssue
+            ? I18n.weeklyRefreshNoCandidate.tr
+            : widget.weekdayLabel(entry.weekday),
+      ),
+      trailing: Text('$baseTime  ->  ${entry.time}'),
     );
   }
 
