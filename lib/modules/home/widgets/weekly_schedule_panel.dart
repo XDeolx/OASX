@@ -353,6 +353,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     if (_dirty && await _save(notify: false) == null) {
       return;
     }
+    if (!mounted) {
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
