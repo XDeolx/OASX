@@ -34,6 +34,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     weeklyScheduleDefaultFreeCycleTasks,
   );
   WeeklyRefreshSettings _weekRefresh = const WeeklyRefreshSettings();
+  bool _supportsWeekRefresh = false;
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
@@ -56,6 +57,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _turtleKeepTasks = initialData.turtleKeepTasks.toSet();
       _freeCycleTasks = initialData.freeCycleTasks.toSet();
       _weekRefresh = initialData.weekRefresh;
+      _supportsWeekRefresh = initialData.supportsWeekRefresh;
       _loading = false;
     }
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -114,6 +116,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _turtleKeepTasks = data.turtleKeepTasks.toSet();
       _freeCycleTasks = data.freeCycleTasks.toSet();
       _weekRefresh = data.weekRefresh;
+      _supportsWeekRefresh = data.supportsWeekRefresh;
       _loading = false;
       _saving = false;
       _dirty = false;
@@ -321,6 +324,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Future<void> _setWeekRefreshEnabled(bool value) async {
+    if (!_ensureWeekRefreshSupported()) {
+      return;
+    }
     setState(() {
       _weekRefresh = _weekRefresh.copyWith(enabled: value);
       _dirty = true;
@@ -329,25 +335,47 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   }
 
   Future<void> _editWeekRefresh() async {
-    final settings = await showWeeklyRefreshDialog(
+    if (!_ensureWeekRefreshSupported()) {
+      return;
+    }
+    await showWeeklyRefreshDialog(
       context: context,
       scriptName: widget.scriptName,
       entries: _entries,
       initialSettings: _weekRefresh,
       weekdayLabel: (weekday) => _weekdayLabel(weekday),
+      onSave: _saveWeekRefreshSettings,
     );
-    if (settings == null || !mounted) {
-      return;
+  }
+
+  bool _ensureWeekRefreshSupported() {
+    if (_supportsWeekRefresh) {
+      return true;
+    }
+    Get.snackbar(I18n.error.tr, I18n.weeklyRefreshBackendUpdateRequired.tr);
+    return false;
+  }
+
+  Future<bool> _saveWeekRefreshSettings(
+    WeeklyRefreshSettings settings,
+  ) async {
+    if (!_supportsWeekRefresh) {
+      _ensureWeekRefreshSupported();
+      return false;
     }
     setState(() {
       _weekRefresh = settings;
       _dirty = true;
     });
-    await _save(notify: false);
+    return await _save(notify: false) != null;
   }
 
   Future<void> _refreshWeekNow() async {
-    if (_saving || !_enabled || !_weekRefresh.enabled || _entries.isEmpty) {
+    if (!_ensureWeekRefreshSupported() ||
+        _saving ||
+        !_enabled ||
+        !_weekRefresh.enabled ||
+        _entries.isEmpty) {
       return;
     }
     if (_dirty && await _save(notify: false) == null) {
@@ -1096,7 +1124,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           children: [
             _buildCompactSwitch(
               value: _weekRefresh.enabled,
-              onChanged: _saving || !_enabled
+              onChanged: _saving || !_enabled || !_supportsWeekRefresh
                   ? null
                   : _setWeekRefreshEnabled,
             ),
@@ -1105,7 +1133,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
             IconButton(
               tooltip: I18n.weeklyRefreshSettings.tr,
               visualDensity: VisualDensity.compact,
-              onPressed: _saving || !_enabled ? null : _editWeekRefresh,
+              onPressed: _saving || !_enabled || !_supportsWeekRefresh
+                  ? null
+                  : _editWeekRefresh,
               icon: Icon(
                 Icons.tune_rounded,
                 color: _weekRefresh.enabled ? Colors.lightBlue : null,
@@ -1117,6 +1147,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
               onPressed: _saving ||
                       !_enabled ||
                       !_weekRefresh.enabled ||
+                      !_supportsWeekRefresh ||
                       _entries.isEmpty
                   ? null
                   : _refreshWeekNow,
@@ -1137,6 +1168,14 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         primaryControls,
         const SizedBox(height: 4),
         modeControls,
+        if (!_supportsWeekRefresh)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              I18n.weeklyRefreshBackendUpdateRequired.tr,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
       ],
     );
     final actions = Wrap(

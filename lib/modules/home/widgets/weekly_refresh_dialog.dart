@@ -15,6 +15,7 @@ Future<WeeklyRefreshSettings?> showWeeklyRefreshDialog({
   required List<WeeklyScheduleEntry> entries,
   required WeeklyRefreshSettings initialSettings,
   required WeeklyRefreshWeekdayLabel weekdayLabel,
+  required Future<bool> Function(WeeklyRefreshSettings settings) onSave,
 }) {
   return showDialog<WeeklyRefreshSettings>(
     context: context,
@@ -23,6 +24,7 @@ Future<WeeklyRefreshSettings?> showWeeklyRefreshDialog({
       entries: entries,
       initialSettings: initialSettings,
       weekdayLabel: weekdayLabel,
+      onSave: onSave,
     ),
   );
 }
@@ -33,12 +35,14 @@ class _WeeklyRefreshDialog extends StatefulWidget {
     required this.entries,
     required this.initialSettings,
     required this.weekdayLabel,
+    required this.onSave,
   });
 
   final String scriptName;
   final List<WeeklyScheduleEntry> entries;
   final WeeklyRefreshSettings initialSettings;
   final WeeklyRefreshWeekdayLabel weekdayLabel;
+  final Future<bool> Function(WeeklyRefreshSettings settings) onSave;
 
   @override
   State<_WeeklyRefreshDialog> createState() => _WeeklyRefreshDialogState();
@@ -51,6 +55,7 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
   late Map<String, WeeklyRefreshBoundary> _boundaries;
   WeeklyRefreshPreview? _preview;
   bool _previewing = false;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -137,9 +142,9 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
           child: Text(I18n.cancel.tr),
         ),
         FilledButton.icon(
-          onPressed: () => Navigator.of(context).pop(_settings),
+          onPressed: _saving ? null : _saveCurrent,
           icon: const Icon(Icons.save_rounded),
-          label: Text(I18n.argsSaveChanges.tr),
+          label: Text(I18n.weeklyRefreshSaveCurrent.tr),
         ),
       ],
     );
@@ -375,6 +380,18 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
     });
     if (preview == null) {
       Get.snackbar(I18n.error.tr, I18n.weeklyRefreshPreviewFailed.tr);
+    }
+  }
+
+  Future<void> _saveCurrent() async {
+    setState(() => _saving = true);
+    final saved = await widget.onSave(_settings);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _saving = false);
+    if (saved) {
+      Get.snackbar(I18n.success.tr, I18n.weeklyRefreshSettingsSaved.tr);
     }
   }
 

@@ -221,6 +221,10 @@ final Map<String, String> _us_ui = {
   I18n.weeklyRefreshPreviewEmpty:
       'Generate a preview to inspect this week\'s time changes',
   I18n.weeklyRefreshPreviewFailed: 'Failed to generate weekly refresh preview',
+  I18n.weeklyRefreshBackendUpdateRequired:
+      'This OAS version does not support weekly refresh. Update and reload OAS first.',
+  I18n.weeklyRefreshSaveCurrent: 'Save current settings',
+  I18n.weeklyRefreshSettingsSaved: 'Weekly refresh settings saved',
   I18n.weeklyRefreshBoundaryStart: 'Earliest time',
   I18n.weeklyRefreshBoundaryEnd: 'Latest time',
   I18n.weeklyRefreshNow: 'Refresh this week now',

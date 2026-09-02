@@ -63,6 +63,13 @@ void main() {
     expect(data.weekRefresh.generatedWeek, '2026-W36');
     expect(data.effectiveEntries.single.time, '08:14:37');
     expect(data.weekRefresh.toRequestJson(), isNot(contains('generated_week')));
+    expect(data.supportsWeekRefresh, isTrue);
+  });
+
+  test('legacy weekly schedule response does not claim refresh support', () {
+    final data = WeeklyScheduleData.fromJson({'enabled': true});
+
+    expect(data.supportsWeekRefresh, isFalse);
   });
 
   test('copy weekday replaces target and keeps other weekdays', () {

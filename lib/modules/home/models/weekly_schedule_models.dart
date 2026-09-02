@@ -258,6 +258,7 @@ class WeeklyScheduleData {
     this.turtleKeepTasks = const [],
     this.freeCycleTasks = weeklyScheduleDefaultFreeCycleTasks,
     this.weekRefresh = const WeeklyRefreshSettings(),
+    this.supportsWeekRefresh = false,
     this.effectiveEntries = const [],
     this.lastAppliedDate = '',
     this.lastAppliedAt = '',
@@ -272,6 +273,7 @@ class WeeklyScheduleData {
   final List<String> turtleKeepTasks;
   final List<String> freeCycleTasks;
   final WeeklyRefreshSettings weekRefresh;
+  final bool supportsWeekRefresh;
   final List<WeeklyScheduleEntry> effectiveEntries;
   final List<WeeklyScheduleEntry> entries;
   final List<WeeklyScheduleTask> tasks;
@@ -298,6 +300,7 @@ class WeeklyScheduleData {
               Map<String, dynamic>.from(json['week_refresh'] as Map),
             )
           : const WeeklyRefreshSettings(),
+      supportsWeekRefresh: json.containsKey('week_refresh'),
       effectiveEntries: _mapList(
         json['effective_entries'],
         WeeklyScheduleEntry.fromJson,

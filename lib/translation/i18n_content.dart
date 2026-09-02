@@ -257,6 +257,10 @@ class I18n {
       weeklyRefreshGeneratePreview = 'weekly_refresh_generate_preview',
       weeklyRefreshPreviewEmpty = 'weekly_refresh_preview_empty',
       weeklyRefreshPreviewFailed = 'weekly_refresh_preview_failed';
+  static const String weeklyRefreshBackendUpdateRequired =
+      'weekly_refresh_backend_update_required';
+  static const String weeklyRefreshSaveCurrent = 'weekly_refresh_save_current';
+  static const String weeklyRefreshSettingsSaved = 'weekly_refresh_settings_saved';
   static const String weeklyRefreshBoundaryStart =
           'weekly_refresh_boundary_start',
       weeklyRefreshBoundaryEnd = 'weekly_refresh_boundary_end',
