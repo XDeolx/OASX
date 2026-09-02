@@ -79,18 +79,22 @@ class WindowsUpdateInstaller implements AppUpdateInstaller {
       flush: true,
     );
 
-    await Process.start(
+    // Keep the process observable until it writes the handoff marker. Detached
+    // launch can silently fail on some Windows installations before PowerShell
+    // starts, leaving OASX with no diagnostic to show.
+    final updaterProcess = await Process.start(
       _resolvePowerShellPath(),
       [
         '-NoLogo',
         '-NoProfile',
+        '-WindowStyle',
+        'Hidden',
         '-NonInteractive',
         '-ExecutionPolicy',
         'Bypass',
         '-File',
         scriptFile.path,
       ],
-      mode: ProcessStartMode.detached,
       workingDirectory: scriptFile.parent.path,
     );
 
@@ -98,6 +102,7 @@ class WindowsUpdateInstaller implements AppUpdateInstaller {
       readyFile: readyFile,
       failureFile: failureFile,
       cancelFile: cancelFile,
+      updaterExitCode: updaterProcess.exitCode,
     );
     exit(0);
   }
@@ -125,9 +130,14 @@ class WindowsUpdateInstaller implements AppUpdateInstaller {
     required File readyFile,
     required File failureFile,
     required File cancelFile,
+    Future<int>? updaterExitCode,
     Duration timeout = const Duration(minutes: 3),
     Duration pollInterval = const Duration(milliseconds: 200),
   }) async {
+    int? processExitCode;
+    updaterExitCode?.then((code) {
+      processExitCode = code;
+    });
     final deadline = DateTime.now().add(timeout);
     while (DateTime.now().isBefore(deadline)) {
       if (await failureFile.exists()) {
@@ -140,6 +150,12 @@ class WindowsUpdateInstaller implements AppUpdateInstaller {
       }
       if (await readyFile.exists()) {
         return;
+      }
+      if (processExitCode != null) {
+        throw WindowsUpdateHandoffException(
+          'Windows updater exited before preparing the update '
+          '(exit code $processExitCode).',
+        );
       }
       await Future<void>.delayed(pollInterval);
     }

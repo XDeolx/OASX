@@ -101,6 +101,36 @@ void main() {
     );
   });
 
+  test('Windows updater handoff reports an updater that exits early', () async {
+    final directory = await Directory.systemTemp.createTemp('oasx_exit_test_');
+    addTearDown(() async {
+      if (await directory.exists()) {
+        await directory.delete(recursive: true);
+      }
+    });
+    final readyFile = File('${directory.path}\\update.ready');
+    final failureFile = File('${directory.path}\\update.failed');
+    final cancelFile = File('${directory.path}\\update.cancel');
+
+    await expectLater(
+      installer.waitForHandoff(
+        readyFile: readyFile,
+        failureFile: failureFile,
+        cancelFile: cancelFile,
+        updaterExitCode: Future<int>.value(1),
+        timeout: const Duration(seconds: 1),
+        pollInterval: const Duration(milliseconds: 10),
+      ),
+      throwsA(
+        isA<WindowsUpdateHandoffException>().having(
+          (error) => error.message,
+          'message',
+          'Windows updater exited before preparing the update (exit code 1).',
+        ),
+      ),
+    );
+  });
+
   test('Windows updater handoff timeout leaves a cancel marker', () async {
     final directory = await Directory.systemTemp.createTemp('oasx_timeout_test_');
     addTearDown(() async {
