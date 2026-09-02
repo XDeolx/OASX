@@ -27,6 +27,44 @@ void main() {
     expect(cleared.freeCycleTasks, isEmpty);
   });
 
+  test('weekly schedule model reads refresh rules and generated snapshot', () {
+    final data = WeeklyScheduleData.fromJson({
+      'enabled': true,
+      'week_refresh': {
+        'enabled': true,
+        'min_offset_seconds': 600,
+        'max_offset_seconds': 1200,
+        'excluded_tasks': ['Restart'],
+        'freeze_windows': [
+          {'weekday': 3, 'start': '04:00:00', 'end': '10:00:00'},
+        ],
+        'boundaries': [
+          {
+            'task': 'AreaBoss',
+            'weekday': 1,
+            'start': '07:30:00',
+            'end': '08:30:00',
+          },
+        ],
+        'generated_week': '2026-W36',
+        'generated_entries': [
+          {'task': 'AreaBoss', 'weekday': 1, 'time': '08:14:37'},
+        ],
+      },
+      'effective_entries': [
+        {'task': 'AreaBoss', 'weekday': 1, 'time': '08:14:37'},
+      ],
+    });
+
+    expect(data.weekRefresh.enabled, isTrue);
+    expect(data.weekRefresh.excludedTasks, ['Restart']);
+    expect(data.weekRefresh.freezeWindows.single.weekday, DateTime.wednesday);
+    expect(data.weekRefresh.boundaries.single.end, '08:30:00');
+    expect(data.weekRefresh.generatedWeek, '2026-W36');
+    expect(data.effectiveEntries.single.time, '08:14:37');
+    expect(data.weekRefresh.toRequestJson(), isNot(contains('generated_week')));
+  });
+
   test('copy weekday replaces target and keeps other weekdays', () {
     const entries = [
       WeeklyScheduleEntry(task: 'AreaBoss', weekday: 1, time: '09:00'),

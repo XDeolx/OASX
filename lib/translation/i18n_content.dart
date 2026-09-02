@@ -239,6 +239,33 @@ class I18n {
       weeklyScheduleFreeCycleSelect = 'weekly_schedule_free_cycle_select',
       weeklyScheduleFreeCycleSelectTitle =
           'weekly_schedule_free_cycle_select_title';
+  static const String weeklyRefresh = 'weekly_refresh',
+      weeklyRefreshSettings = 'weekly_refresh_settings',
+      weeklyRefreshRange = 'weekly_refresh_range',
+      weeklyRefreshExcluded = 'weekly_refresh_excluded';
+  static const String weeklyRefreshBoundaries = 'weekly_refresh_boundaries',
+      weeklyRefreshPreview = 'weekly_refresh_preview',
+      weeklyRefreshRandomRange = 'weekly_refresh_random_range',
+      weeklyRefreshRandomRangeHelp = 'weekly_refresh_random_range_help';
+  static const String weeklyRefreshFreezeWindows =
+          'weekly_refresh_freeze_windows',
+      weeklyRefreshAddFreeze = 'weekly_refresh_add_freeze',
+      weeklyRefreshNoFreeze = 'weekly_refresh_no_freeze',
+      weeklyRefreshExcludedTaskHelp = 'weekly_refresh_excluded_task_help';
+  static const String weeklyRefreshClearBoundary =
+          'weekly_refresh_clear_boundary',
+      weeklyRefreshGeneratePreview = 'weekly_refresh_generate_preview',
+      weeklyRefreshPreviewEmpty = 'weekly_refresh_preview_empty',
+      weeklyRefreshPreviewFailed = 'weekly_refresh_preview_failed';
+  static const String weeklyRefreshBoundaryStart =
+          'weekly_refresh_boundary_start',
+      weeklyRefreshBoundaryEnd = 'weekly_refresh_boundary_end',
+      weeklyRefreshNow = 'weekly_refresh_now',
+      weeklyRefreshNowConfirm = 'weekly_refresh_now_confirm';
+  static const String weeklyRefreshFailed = 'weekly_refresh_failed',
+      weeklyRefreshApplied = 'weekly_refresh_applied',
+      weeklyRefreshNoCandidate = 'weekly_refresh_no_candidate',
+      weeklyRefreshIssues = 'weekly_refresh_issues';
   static const String weekdayMonday = 'weekday_monday',
       weekdayTuesday = 'weekday_tuesday',
       weekdayWednesday = 'weekday_wednesday',

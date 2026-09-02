@@ -3,6 +3,14 @@ const weeklyScheduleDefaultFreeCycleTasks = <String>[
   'KekkaiUtilize',
 ];
 
+const weeklyRefreshDefaultFreezeWindows = <WeeklyRefreshFreezeWindow>[
+  WeeklyRefreshFreezeWindow(
+    weekday: DateTime.wednesday,
+    start: '04:00:00',
+    end: '10:00:00',
+  ),
+];
+
 class WeeklyScheduleEntry {
   const WeeklyScheduleEntry({
     required this.task,
@@ -52,6 +60,191 @@ class WeeklyScheduleTask {
   }
 }
 
+class WeeklyRefreshFreezeWindow {
+  const WeeklyRefreshFreezeWindow({
+    required this.weekday,
+    required this.start,
+    required this.end,
+  });
+
+  final int weekday;
+  final String start;
+  final String end;
+
+  factory WeeklyRefreshFreezeWindow.fromJson(Map<String, dynamic> json) {
+    return WeeklyRefreshFreezeWindow(
+      weekday: int.tryParse(json['weekday']?.toString() ?? '') ?? 1,
+      start: json['start']?.toString() ?? '00:00:00',
+      end: json['end']?.toString() ?? '23:59:59',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'weekday': weekday,
+        'start': start,
+        'end': end,
+      };
+}
+
+class WeeklyRefreshBoundary {
+  const WeeklyRefreshBoundary({
+    required this.task,
+    required this.weekday,
+    required this.start,
+    required this.end,
+  });
+
+  final String task;
+  final int weekday;
+  final String start;
+  final String end;
+
+  factory WeeklyRefreshBoundary.fromJson(Map<String, dynamic> json) {
+    return WeeklyRefreshBoundary(
+      task: json['task']?.toString() ?? '',
+      weekday: int.tryParse(json['weekday']?.toString() ?? '') ?? 1,
+      start: json['start']?.toString() ?? '00:00:00',
+      end: json['end']?.toString() ?? '23:59:59',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'task': task,
+        'weekday': weekday,
+        'start': start,
+        'end': end,
+      };
+}
+
+class WeeklyRefreshIssue {
+  const WeeklyRefreshIssue({
+    required this.task,
+    required this.weekday,
+    required this.baseTime,
+    required this.reason,
+  });
+
+  final String task;
+  final int weekday;
+  final String baseTime;
+  final String reason;
+
+  factory WeeklyRefreshIssue.fromJson(Map<String, dynamic> json) {
+    return WeeklyRefreshIssue(
+      task: json['task']?.toString() ?? '',
+      weekday: int.tryParse(json['weekday']?.toString() ?? '') ?? 1,
+      baseTime: json['base_time']?.toString() ?? '',
+      reason: json['reason']?.toString() ?? '',
+    );
+  }
+}
+
+class WeeklyRefreshSettings {
+  const WeeklyRefreshSettings({
+    this.enabled = false,
+    this.minOffsetSeconds = 600,
+    this.maxOffsetSeconds = 1200,
+    this.excludedTasks = const [],
+    this.freezeWindows = weeklyRefreshDefaultFreezeWindows,
+    this.boundaries = const [],
+    this.generatedWeek = '',
+    this.generatedAt = '',
+    this.generatedEntries = const [],
+    this.issues = const [],
+  });
+
+  final bool enabled;
+  final int minOffsetSeconds;
+  final int maxOffsetSeconds;
+  final List<String> excludedTasks;
+  final List<WeeklyRefreshFreezeWindow> freezeWindows;
+  final List<WeeklyRefreshBoundary> boundaries;
+  final String generatedWeek;
+  final String generatedAt;
+  final List<WeeklyScheduleEntry> generatedEntries;
+  final List<WeeklyRefreshIssue> issues;
+
+  factory WeeklyRefreshSettings.fromJson(Map<String, dynamic> json) {
+    return WeeklyRefreshSettings(
+      enabled: json['enabled'] == true,
+      minOffsetSeconds:
+          int.tryParse(json['min_offset_seconds']?.toString() ?? '') ?? 600,
+      maxOffsetSeconds:
+          int.tryParse(json['max_offset_seconds']?.toString() ?? '') ?? 1200,
+      excludedTasks: _stringList(json['excluded_tasks']),
+      freezeWindows: json.containsKey('freeze_windows')
+          ? _mapList(
+              json['freeze_windows'],
+              WeeklyRefreshFreezeWindow.fromJson,
+            )
+          : weeklyRefreshDefaultFreezeWindows,
+      boundaries: _mapList(
+        json['boundaries'],
+        WeeklyRefreshBoundary.fromJson,
+      ),
+      generatedWeek: json['generated_week']?.toString() ?? '',
+      generatedAt: json['generated_at']?.toString() ?? '',
+      generatedEntries: _mapList(
+        json['generated_entries'],
+        WeeklyScheduleEntry.fromJson,
+      ),
+      issues: _mapList(json['issues'], WeeklyRefreshIssue.fromJson),
+    );
+  }
+
+  WeeklyRefreshSettings copyWith({
+    bool? enabled,
+    int? minOffsetSeconds,
+    int? maxOffsetSeconds,
+    List<String>? excludedTasks,
+    List<WeeklyRefreshFreezeWindow>? freezeWindows,
+    List<WeeklyRefreshBoundary>? boundaries,
+    String? generatedWeek,
+    String? generatedAt,
+    List<WeeklyScheduleEntry>? generatedEntries,
+    List<WeeklyRefreshIssue>? issues,
+  }) {
+    return WeeklyRefreshSettings(
+      enabled: enabled ?? this.enabled,
+      minOffsetSeconds: minOffsetSeconds ?? this.minOffsetSeconds,
+      maxOffsetSeconds: maxOffsetSeconds ?? this.maxOffsetSeconds,
+      excludedTasks: excludedTasks ?? this.excludedTasks,
+      freezeWindows: freezeWindows ?? this.freezeWindows,
+      boundaries: boundaries ?? this.boundaries,
+      generatedWeek: generatedWeek ?? this.generatedWeek,
+      generatedAt: generatedAt ?? this.generatedAt,
+      generatedEntries: generatedEntries ?? this.generatedEntries,
+      issues: issues ?? this.issues,
+    );
+  }
+
+  Map<String, dynamic> toRequestJson() => {
+        'enabled': enabled,
+        'min_offset_seconds': minOffsetSeconds,
+        'max_offset_seconds': maxOffsetSeconds,
+        'excluded_tasks': excludedTasks,
+        'freeze_windows': freezeWindows.map((item) => item.toJson()).toList(),
+        'boundaries': boundaries.map((item) => item.toJson()).toList(),
+      };
+}
+
+class WeeklyRefreshPreview {
+  const WeeklyRefreshPreview({
+    required this.entries,
+    required this.issues,
+  });
+
+  final List<WeeklyScheduleEntry> entries;
+  final List<WeeklyRefreshIssue> issues;
+
+  factory WeeklyRefreshPreview.fromJson(Map<String, dynamic> json) {
+    return WeeklyRefreshPreview(
+      entries: _mapList(json['entries'], WeeklyScheduleEntry.fromJson),
+      issues: _mapList(json['issues'], WeeklyRefreshIssue.fromJson),
+    );
+  }
+}
+
 class WeeklyScheduleData {
   const WeeklyScheduleData({
     required this.enabled,
@@ -64,6 +257,8 @@ class WeeklyScheduleData {
     this.turtleMode = false,
     this.turtleKeepTasks = const [],
     this.freeCycleTasks = weeklyScheduleDefaultFreeCycleTasks,
+    this.weekRefresh = const WeeklyRefreshSettings(),
+    this.effectiveEntries = const [],
     this.lastAppliedDate = '',
     this.lastAppliedAt = '',
     this.serverNow = '',
@@ -76,6 +271,8 @@ class WeeklyScheduleData {
   final bool turtleMode;
   final List<String> turtleKeepTasks;
   final List<String> freeCycleTasks;
+  final WeeklyRefreshSettings weekRefresh;
+  final List<WeeklyScheduleEntry> effectiveEntries;
   final List<WeeklyScheduleEntry> entries;
   final List<WeeklyScheduleTask> tasks;
   final List<String> plannedTasks;
@@ -96,6 +293,15 @@ class WeeklyScheduleData {
       freeCycleTasks: json.containsKey('free_cycle_tasks')
           ? _stringList(json['free_cycle_tasks'])
           : weeklyScheduleDefaultFreeCycleTasks,
+      weekRefresh: json['week_refresh'] is Map
+          ? WeeklyRefreshSettings.fromJson(
+              Map<String, dynamic>.from(json['week_refresh'] as Map),
+            )
+          : const WeeklyRefreshSettings(),
+      effectiveEntries: _mapList(
+        json['effective_entries'],
+        WeeklyScheduleEntry.fromJson,
+      ),
       entries: _mapList(json['entries'], WeeklyScheduleEntry.fromJson),
       tasks: _mapList(json['tasks'], WeeklyScheduleTask.fromJson),
       plannedTasks: _stringList(json['planned_tasks']),

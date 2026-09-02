@@ -23,6 +23,7 @@ extension ApiClientScriptX on ApiClient {
     required bool turtleMode,
     required List<String> turtleKeepTasks,
     required List<String> freeCycleTasks,
+    required WeeklyRefreshSettings weekRefresh,
     required List<WeeklyScheduleEntry> entries,
   }) async {
     final res = await request(
@@ -34,9 +35,46 @@ extension ApiClientScriptX on ApiClient {
           'turtle_mode': turtleMode,
           'turtle_keep_tasks': turtleKeepTasks,
           'free_cycle_tasks': freeCycleTasks,
+          'week_refresh': weekRefresh.toRequestJson(),
           'entries': entries.map((entry) => entry.toJson()).toList(),
         },
       ),
+    );
+    if (!res.isSuccess || res.data is! Map) {
+      return null;
+    }
+    return WeeklyScheduleData.fromJson(
+      Map<String, dynamic>.from(res.data as Map),
+    );
+  }
+
+  Future<WeeklyRefreshPreview?> previewWeeklyRefresh(
+    String scriptName, {
+    required List<WeeklyScheduleEntry> entries,
+    required WeeklyRefreshSettings settings,
+  }) async {
+    final res = await request(
+      () => post(
+        '/$scriptName/weekly_schedule/refresh/preview',
+        data: {
+          'entries': entries.map((entry) => entry.toJson()).toList(),
+          'week_refresh': settings.toRequestJson(),
+        },
+      ),
+    );
+    if (!res.isSuccess || res.data is! Map) {
+      return null;
+    }
+    return WeeklyRefreshPreview.fromJson(
+      Map<String, dynamic>.from(res.data as Map),
+    );
+  }
+
+  Future<WeeklyScheduleData?> refreshWeeklyScheduleNow(
+    String scriptName,
+  ) async {
+    final res = await request(
+      () => post('/$scriptName/weekly_schedule/refresh'),
     );
     if (!res.isSuccess || res.data is! Map) {
       return null;

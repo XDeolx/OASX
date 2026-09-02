@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:oasx/api/api_client.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_models.dart';
 import 'package:oasx/modules/home/models/weekly_schedule_operations.dart';
+import 'package:oasx/modules/home/widgets/weekly_refresh_dialog.dart';
 import 'package:oasx/modules/home/widgets/weekly_schedule_time_picker.dart';
 import 'package:oasx/translation/i18n_content.dart';
 
@@ -32,6 +33,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   Set<String> _freeCycleTasks = Set<String>.from(
     weeklyScheduleDefaultFreeCycleTasks,
   );
+  WeeklyRefreshSettings _weekRefresh = const WeeklyRefreshSettings();
   bool _loading = true;
   bool _saving = false;
   bool _dirty = false;
@@ -53,6 +55,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _turtleMode = initialData.turtleMode;
       _turtleKeepTasks = initialData.turtleKeepTasks.toSet();
       _freeCycleTasks = initialData.freeCycleTasks.toSet();
+      _weekRefresh = initialData.weekRefresh;
       _loading = false;
     }
     _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
@@ -110,6 +113,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _turtleMode = data.turtleMode;
       _turtleKeepTasks = data.turtleKeepTasks.toSet();
       _freeCycleTasks = data.freeCycleTasks.toSet();
+      _weekRefresh = data.weekRefresh;
       _loading = false;
       _saving = false;
       _dirty = false;
@@ -128,6 +132,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       turtleMode: _turtleMode,
       turtleKeepTasks: _turtleKeepTasks.toList()..sort(),
       freeCycleTasks: _freeCycleTasks.toList()..sort(),
+      weekRefresh: _weekRefresh,
       entries: _entries,
     );
     if (!mounted) {
@@ -313,6 +318,73 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
       _dirty = true;
     });
     await _save(notify: false);
+  }
+
+  Future<void> _setWeekRefreshEnabled(bool value) async {
+    setState(() {
+      _weekRefresh = _weekRefresh.copyWith(enabled: value);
+      _dirty = true;
+    });
+    await _save(notify: false);
+  }
+
+  Future<void> _editWeekRefresh() async {
+    final settings = await showWeeklyRefreshDialog(
+      context: context,
+      scriptName: widget.scriptName,
+      entries: _entries,
+      initialSettings: _weekRefresh,
+      weekdayLabel: (weekday) => _weekdayLabel(weekday),
+    );
+    if (settings == null || !mounted) {
+      return;
+    }
+    setState(() {
+      _weekRefresh = settings;
+      _dirty = true;
+    });
+    await _save(notify: false);
+  }
+
+  Future<void> _refreshWeekNow() async {
+    if (_saving || !_enabled || !_weekRefresh.enabled || _entries.isEmpty) {
+      return;
+    }
+    if (_dirty && await _save(notify: false) == null) {
+      return;
+    }
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(I18n.weeklyRefreshNow.tr),
+        content: Text(I18n.weeklyRefreshNowConfirm.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(I18n.cancel.tr),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(I18n.confirm.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    setState(() => _saving = true);
+    final data = await ApiClient().refreshWeeklyScheduleNow(widget.scriptName);
+    if (!mounted) {
+      return;
+    }
+    if (data == null) {
+      setState(() => _saving = false);
+      Get.snackbar(I18n.error.tr, I18n.weeklyRefreshFailed.tr);
+      return;
+    }
+    _useData(data);
+    Get.snackbar(I18n.success.tr, I18n.weeklyRefreshApplied.tr);
   }
 
   Future<Set<String>?> _showTaskSelectionDialog({
@@ -1016,6 +1088,39 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
             ),
           ],
         ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildCompactSwitch(
+              value: _weekRefresh.enabled,
+              onChanged: _saving || !_enabled
+                  ? null
+                  : _setWeekRefreshEnabled,
+            ),
+            const SizedBox(width: 6),
+            Text(I18n.weeklyRefresh.tr),
+            IconButton(
+              tooltip: I18n.weeklyRefreshSettings.tr,
+              visualDensity: VisualDensity.compact,
+              onPressed: _saving || !_enabled ? null : _editWeekRefresh,
+              icon: Icon(
+                Icons.tune_rounded,
+                color: _weekRefresh.enabled ? Colors.lightBlue : null,
+              ),
+            ),
+            IconButton(
+              tooltip: I18n.weeklyRefreshNow.tr,
+              visualDensity: VisualDensity.compact,
+              onPressed: _saving ||
+                      !_enabled ||
+                      !_weekRefresh.enabled ||
+                      _entries.isEmpty
+                  ? null
+                  : _refreshWeekNow,
+              icon: const Icon(Icons.shuffle_rounded),
+            ),
+          ],
+        ),
         if (_dirty)
           Text(
             I18n.argsDraftDirty.tr,
@@ -1122,6 +1227,9 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
     final lastApplied = data.lastAppliedAt.isEmpty
         ? I18n.weeklyScheduleNotSynced.tr
         : data.lastAppliedAt;
+    final refreshWeek = _weekRefresh.generatedWeek.isEmpty
+        ? I18n.weeklyScheduleNotSynced.tr
+        : _weekRefresh.generatedWeek;
     return Wrap(
       spacing: 18,
       runSpacing: 4,
@@ -1139,6 +1247,16 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
           Icons.update_rounded,
           '${I18n.weeklyScheduleLastSynced.tr}: $lastApplied',
         ),
+        if (_weekRefresh.enabled)
+          _buildStatusText(
+            Icons.shuffle_rounded,
+            '${I18n.weeklyRefresh.tr}: $refreshWeek',
+          ),
+        if (_weekRefresh.issues.isNotEmpty)
+          _buildStatusText(
+            Icons.warning_amber_rounded,
+            '${I18n.weeklyRefreshIssues.tr}: ${_weekRefresh.issues.length}',
+          ),
       ],
     );
   }
@@ -1287,6 +1405,12 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
   Widget _buildEntry(MapEntry<int, WeeklyScheduleEntry> indexedEntry) {
     final index = indexedEntry.key;
     final entry = indexedEntry.value;
+    final effectiveEntry = _effectiveEntry(entry);
+    final scheduledLabel = effectiveEntry != null &&
+            effectiveEntry.time != entry.time
+        ? '${_entryScheduledAt(effectiveEntry)}  |  '
+            '${entry.time} -> ${effectiveEntry.time}'
+        : _entryScheduledAt(entry);
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: SizedBox(
@@ -1311,7 +1435,7 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         ),
       ),
       title: Text(entry.task.tr),
-      subtitle: Text(_entryScheduledAt(entry)),
+      subtitle: Text(scheduledLabel),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1368,6 +1492,15 @@ class _WeeklySchedulePanelState extends State<WeeklySchedulePanel> {
         '${scheduledAt.month.toString().padLeft(2, '0')}-'
         '${scheduledAt.day.toString().padLeft(2, '0')} '
         '$displayTime';
+  }
+
+  WeeklyScheduleEntry? _effectiveEntry(WeeklyScheduleEntry entry) {
+    for (final candidate in _data!.effectiveEntries) {
+      if (candidate.task == entry.task && candidate.weekday == entry.weekday) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   String _formatDateTime(DateTime value) {
