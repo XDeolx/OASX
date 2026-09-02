@@ -217,6 +217,10 @@ final Map<String, String> _us_ui = {
   I18n.weeklyRefreshExcludedTaskHelp:
       'Keep the base time and exclude it from weekly refresh',
   I18n.weeklyRefreshClearBoundary: 'Clear task boundary',
+  I18n.weeklyRefreshClearAllBoundaries: 'Clear all task boundaries',
+  I18n.weeklyRefreshBoundaryUnified: 'Unified settings',
+  I18n.weeklyRefreshBoundaryIndividual: 'Individual settings',
+  I18n.weeklyRefreshBoundaryMixed: 'Individual boundaries already set',
   I18n.weeklyRefreshGeneratePreview: 'Generate preview',
   I18n.weeklyRefreshPreviewEmpty:
       'Generate a preview to inspect this week\'s time changes',

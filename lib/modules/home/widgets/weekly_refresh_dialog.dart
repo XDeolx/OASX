@@ -56,6 +56,7 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
   WeeklyRefreshPreview? _preview;
   bool _previewing = false;
   bool _saving = false;
+  bool _useUnifiedBoundaries = true;
 
   @override
   void initState() {
@@ -253,19 +254,76 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
   }
 
   Widget _buildBoundariesTab() {
-    final uniqueEntries = <String, WeeklyScheduleEntry>{};
-    for (final entry in widget.entries) {
-      uniqueEntries.putIfAbsent(
-        _entryKey(entry.task, entry.weekday),
-        () => entry,
-      );
-    }
-    final entries = uniqueEntries.values.toList()
-      ..sort((a, b) {
-        final day = a.weekday.compareTo(b.weekday);
-        final time = a.time.compareTo(b.time);
-        return day != 0 ? day : (time != 0 ? time : a.task.compareTo(b.task));
-      });
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: SegmentedButton<bool>(
+            segments: [
+              ButtonSegment(
+                value: true,
+                label: Text(I18n.weeklyRefreshBoundaryUnified.tr),
+              ),
+              ButtonSegment(
+                value: false,
+                label: Text(I18n.weeklyRefreshBoundaryIndividual.tr),
+              ),
+            ],
+            selected: {_useUnifiedBoundaries},
+            onSelectionChanged: (value) {
+              setState(() => _useUnifiedBoundaries = value.single);
+            },
+          ),
+        ),
+        Expanded(
+          child: _useUnifiedBoundaries
+              ? _buildUnifiedBoundariesList()
+              : _buildIndividualBoundariesList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnifiedBoundariesList() {
+    final tasks = widget.entries.map((entry) => entry.task).toSet().toList()
+      ..sort();
+    return ListView.builder(
+      itemCount: tasks.length,
+      itemBuilder: (context, index) {
+        final task = tasks[index];
+        final entries = _entriesForTask(task);
+        final boundary = _sharedBoundary(entries);
+        final hasAnyBoundary = entries.any(
+          (entry) => _boundaries.containsKey(_entryKey(entry.task, entry.weekday)),
+        );
+        return ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: Icon(
+            hasAnyBoundary ? Icons.schedule_rounded : Icons.horizontal_rule_rounded,
+          ),
+          title: Text(task.tr),
+          subtitle: Text(
+            boundary == null
+                ? (hasAnyBoundary
+                    ? I18n.weeklyRefreshBoundaryMixed.tr
+                    : I18n.weeklyRefreshBoundaryUnified.tr)
+                : '${boundary.start} - ${boundary.end}',
+          ),
+          onTap: () => _editUnifiedBoundary(task),
+          trailing: hasAnyBoundary
+              ? IconButton(
+                  tooltip: I18n.weeklyRefreshClearAllBoundaries.tr,
+                  onPressed: () => _clearTaskBoundaries(task),
+                  icon: const Icon(Icons.close_rounded),
+                )
+              : const Icon(Icons.chevron_right_rounded),
+        );
+      },
+    );
+  }
+
+  Widget _buildIndividualBoundariesList() {
+    final entries = _uniqueEntries();
     return ListView.builder(
       itemCount: entries.length,
       itemBuilder: (context, index) {
@@ -553,6 +611,132 @@ class _WeeklyRefreshDialogState extends State<_WeeklyRefreshDialog> {
         _preview = null;
       });
     }
+  }
+
+  Future<void> _editUnifiedBoundary(String task) async {
+    final entries = _entriesForTask(task);
+    final initial = _sharedBoundary(entries) ?? _firstBoundary(entries);
+    var start = WeeklyScheduleClockTime.parse(initial?.start ?? '00:00:00');
+    var end = WeeklyScheduleClockTime.parse(initial?.end ?? '23:59:59');
+    final boundary = await showDialog<WeeklyRefreshBoundary>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(task.tr),
+          content: SizedBox(
+            width: 420,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _timeTile(
+                  dialogContext: dialogContext,
+                  label: I18n.weeklyRefreshBoundaryStart.tr,
+                  value: start,
+                  onChanged: (value) => setDialogState(() => start = value),
+                ),
+                _timeTile(
+                  dialogContext: dialogContext,
+                  label: I18n.weeklyRefreshBoundaryEnd.tr,
+                  value: end,
+                  onChanged: (value) => setDialogState(() => end = value),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(I18n.cancel.tr),
+            ),
+            FilledButton(
+              onPressed: _seconds(start) > _seconds(end)
+                  ? null
+                  : () => Navigator.of(dialogContext).pop(
+                        WeeklyRefreshBoundary(
+                          task: task,
+                          weekday: DateTime.monday,
+                          start: start.format(),
+                          end: end.format(),
+                        ),
+                      ),
+              child: Text(I18n.confirm.tr),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (boundary != null && mounted) {
+      setState(() {
+        for (final entry in entries) {
+          _boundaries[_entryKey(entry.task, entry.weekday)] =
+              WeeklyRefreshBoundary(
+                task: entry.task,
+                weekday: entry.weekday,
+                start: boundary.start,
+                end: boundary.end,
+              );
+        }
+        _preview = null;
+      });
+    }
+  }
+
+  List<WeeklyScheduleEntry> _uniqueEntries() {
+    final uniqueEntries = <String, WeeklyScheduleEntry>{};
+    for (final entry in widget.entries) {
+      uniqueEntries.putIfAbsent(
+        _entryKey(entry.task, entry.weekday),
+        () => entry,
+      );
+    }
+    return uniqueEntries.values.toList()
+      ..sort((a, b) {
+        final day = a.weekday.compareTo(b.weekday);
+        final time = a.time.compareTo(b.time);
+        return day != 0 ? day : (time != 0 ? time : a.task.compareTo(b.task));
+      });
+  }
+
+  List<WeeklyScheduleEntry> _entriesForTask(String task) => _uniqueEntries()
+      .where((entry) => entry.task == task)
+      .toList();
+
+  WeeklyRefreshBoundary? _firstBoundary(List<WeeklyScheduleEntry> entries) {
+    for (final entry in entries) {
+      final boundary = _boundaries[_entryKey(entry.task, entry.weekday)];
+      if (boundary != null) {
+        return boundary;
+      }
+    }
+    return null;
+  }
+
+  WeeklyRefreshBoundary? _sharedBoundary(List<WeeklyScheduleEntry> entries) {
+    if (entries.isEmpty) {
+      return null;
+    }
+    final first = _firstBoundary(entries);
+    if (first == null || entries.length == 1) {
+      return first;
+    }
+    for (final entry in entries) {
+      final boundary = _boundaries[_entryKey(entry.task, entry.weekday)];
+      if (boundary == null ||
+          boundary.start != first.start ||
+          boundary.end != first.end) {
+        return null;
+      }
+    }
+    return first;
+  }
+
+  void _clearTaskBoundaries(String task) {
+    setState(() {
+      for (final entry in _entriesForTask(task)) {
+        _boundaries.remove(_entryKey(entry.task, entry.weekday));
+      }
+      _preview = null;
+    });
   }
 
   Widget _timeTile({

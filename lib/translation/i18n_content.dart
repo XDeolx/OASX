@@ -253,7 +253,11 @@ class I18n {
       weeklyRefreshNoFreeze = 'weekly_refresh_no_freeze',
       weeklyRefreshExcludedTaskHelp = 'weekly_refresh_excluded_task_help';
   static const String weeklyRefreshClearBoundary =
-          'weekly_refresh_clear_boundary',
+           'weekly_refresh_clear_boundary',
+      weeklyRefreshClearAllBoundaries = 'weekly_refresh_clear_all_boundaries',
+      weeklyRefreshBoundaryUnified = 'weekly_refresh_boundary_unified',
+      weeklyRefreshBoundaryIndividual = 'weekly_refresh_boundary_individual',
+      weeklyRefreshBoundaryMixed = 'weekly_refresh_boundary_mixed',
       weeklyRefreshGeneratePreview = 'weekly_refresh_generate_preview',
       weeklyRefreshPreviewEmpty = 'weekly_refresh_preview_empty',
       weeklyRefreshPreviewFailed = 'weekly_refresh_preview_failed';
