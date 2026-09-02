@@ -544,6 +544,7 @@ class I18n {
       updatePreparing = 'update_preparing',
       updateCheckFailed = 'update_check_failed',
       updateDownloadFailed = 'update_download_failed',
+      updateInstallFailed = 'update_install_failed',
       updateDownloadProgress = 'update_download_progress',
       updateDownloadProgressUnknown = 'update_download_progress_unknown',
       updateInvalidPackage = 'update_invalid_package',

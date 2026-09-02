@@ -96,6 +96,7 @@ final Map<String, String> _us_ui = {
   I18n.updatePreparing: 'Preparing update install',
   I18n.updateCheckFailed: 'Failed to check for updates',
   I18n.updateDownloadFailed: 'Failed to download the update package',
+  I18n.updateInstallFailed: 'Update preparation failed: @error',
   I18n.updateDownloadProgress: 'Downloaded @received / @total (@percent%)',
   I18n.updateDownloadProgressUnknown: 'Downloaded @received',
   I18n.updateInvalidPackage:

@@ -111,9 +111,13 @@ class AppUpdateService extends GetxService {
       if (_isDownloadCancelled(error)) {
         return;
       }
-      final message = error.toString().contains('permission_required')
-          ? I18n.updateAllowUnknownApps.tr
-          : I18n.updateDownloadFailed.tr;
+      final message = switch (error) {
+        WindowsUpdateHandoffException(:final message) =>
+          I18n.updateInstallFailed.trParams({'error': message}),
+        _ when error.toString().contains('permission_required') =>
+          I18n.updateAllowUnknownApps.tr,
+        _ => I18n.updateDownloadFailed.tr,
+      };
       Get.snackbar(I18n.tip.tr, message);
     } finally {
       _activeDownloadSession = null;

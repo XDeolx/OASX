@@ -93,6 +93,7 @@ final Map<String, String> _cn_ui = {
   I18n.updatePreparing: '正在准备安装更新',
   I18n.updateCheckFailed: '检查更新失败',
   I18n.updateDownloadFailed: '下载更新失败，请稍后重试',
+  I18n.updateInstallFailed: '更新准备失败：@error',
   I18n.updateDownloadProgress: '已下载 @received / @total (@percent%)',
   I18n.updateDownloadProgressUnknown: '已下载 @received',
   I18n.updateInvalidPackage: '更新包校验失败，请重新下载',
