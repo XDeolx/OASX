@@ -306,6 +306,14 @@ final RegExp _behaviorTaskEndPattern = RegExp(
 final RegExp _behaviorRandomWaitPattern = RegExp(
   r'([^|:\r\n]*随机(?:等待|休息))\s*[:：]\s*(?:[^|\r\n]*?\bdelay\s*=\s*)?(\d+(?:\.\d+)?)s',
 );
+final RegExp _behaviorClimbFatigueDelayPattern = RegExp(
+  r'Climb fatigue (?:settlement )?delay:\s*[^|\r\n]*?\bdelay\s*=\s*(\d+(?:\.\d+)?)s',
+  caseSensitive: false,
+);
+final RegExp _behaviorClimbFatigueRestPattern = RegExp(
+  r'Climb fatigue rest:\s*[^|\r\n]*?\bduration\s*=\s*(\d+(?:\.\d+)?)m',
+  caseSensitive: false,
+);
 final RegExp _behaviorRecoveryTaskPattern = RegExp(
   r'Game is not running before task `([^`]+)`, recover it via Restart',
 );
@@ -329,6 +337,21 @@ Map<String, dynamic> parseBehaviorLogPayload(Map<String, String> request) {
   var pendingRecoveryTask = '';
   int? openTaskRunIndex;
   DateTime? lastTimestamp;
+
+  void addRandomWait(
+    DateTime? time,
+    String taskName,
+    String label,
+    double delaySeconds,
+  ) {
+    randomWaits.putIfAbsent(label, () => <double>[]).add(delaySeconds);
+    randomWaitEvents.add([
+      time?.millisecondsSinceEpoch ?? 0,
+      label,
+      delaySeconds,
+      taskName.isEmpty ? 'Unassigned' : taskName,
+    ]);
+  }
 
   for (final line in const LineSplitter().convert(content)) {
     final timestamp = _parseBehaviorTimestamp(line);
@@ -400,14 +423,23 @@ Map<String, dynamic> parseBehaviorLogPayload(Map<String, String> request) {
       final label = wait.group(1)?.trim() ?? '';
       final delay = double.tryParse(wait.group(2) ?? '') ?? 0;
       if (label.isNotEmpty) {
-        randomWaits.putIfAbsent(label, () => <double>[]).add(delay);
-        randomWaitEvents.add([
-          timestamp?.millisecondsSinceEpoch ?? 0,
-          label,
-          delay,
-          currentTask.isEmpty ? 'Unassigned' : currentTask,
-        ]);
+        addRandomWait(timestamp, currentTask, label, delay);
       }
+    }
+
+    final climbDelay = _behaviorClimbFatigueDelayPattern.firstMatch(line);
+    if (climbDelay != null) {
+      final delay = double.tryParse(climbDelay.group(1) ?? '') ?? 0;
+      final label = line.toLowerCase().contains('settlement delay')
+          ? '爬塔疲劳结算延迟'
+          : '爬塔疲劳战前延迟';
+      addRandomWait(timestamp, currentTask, label, delay);
+    }
+
+    final climbRest = _behaviorClimbFatigueRestPattern.firstMatch(line);
+    if (climbRest != null) {
+      final minutes = double.tryParse(climbRest.group(1) ?? '') ?? 0;
+      addRandomWait(timestamp, currentTask, '爬塔疲劳休息', minutes * 60);
     }
 
     if (timestamp != null &&

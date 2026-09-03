@@ -313,7 +313,7 @@ class _BehaviorRandomWaitChartState extends State<BehaviorRandomWaitChart> {
                   _hoverCard(context, mark.offset, size, [
                     '${I18n.behaviorAnalysisTime.tr}：${_formatTime(event.time)}',
                     '${I18n.behaviorAnalysisCategory.tr}：${event.label}',
-                    '${I18n.behaviorAnalysisDuration.tr}：${event.delaySeconds.toStringAsFixed(3)} s',
+                    '${I18n.behaviorAnalysisDuration.tr}：${_formatWaitDuration(event.delaySeconds)}',
                     '${I18n.behaviorAnalysisTask.tr}：${event.taskName.tr}',
                   ]),
               ],
@@ -1231,6 +1231,15 @@ String _formatDuration(Duration duration) {
     return '${minutes}m ${seconds.toStringAsFixed(1)}s';
   }
   return '${seconds.toStringAsFixed(1)}s';
+}
+
+String _formatWaitDuration(double seconds) {
+  if (seconds >= 60) {
+    return _formatDuration(
+      Duration(milliseconds: (seconds * Duration.millisecondsPerSecond).round()),
+    );
+  }
+  return '${seconds.toStringAsFixed(3)} s';
 }
 
 void _paintText(

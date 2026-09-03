@@ -63,6 +63,32 @@ void main() {
     expect(analysis.randomWaitEvents.last.delaySeconds, 7.4);
   });
 
+  test('parses climb fatigue delays and minute-based rest records', () {
+    const content = '''
+2026-09-04 09:00:00.000 | INFO | Scheduler: Start task `ActivityShikigami`
+2026-09-04 09:00:01.000 | INFO | Climb fatigue delay: progress=12/60, delay=1.48s, range=1.20-2.00s
+2026-09-04 09:01:02.000 | INFO | Climb fatigue settlement delay: delay=2.37s
+2026-09-04 09:02:03.000 | INFO | Climb fatigue rest: completed=60/60, duration=6.25m
+2026-09-04 09:08:03.000 | INFO | Climb fatigue rest finished: actual_duration=6.00m, cycle reset
+2026-09-04 09:09:00.000 | INFO | Scheduler: End task `ActivityShikigami`
+''';
+
+    final analysis = BehaviorAnalysisDay.fromMap(parseBehaviorLogPayload({
+      'script_name': '玖',
+      'date': '2026-09-04',
+      'content': content,
+    }));
+
+    expect(analysis.randomWaits['爬塔疲劳战前延迟'], [1.48]);
+    expect(analysis.randomWaits['爬塔疲劳结算延迟'], [2.37]);
+    expect(analysis.randomWaits['爬塔疲劳休息'], [375.0]);
+    expect(analysis.randomWaitEvents, hasLength(3));
+    expect(
+      analysis.filteredByTask('ActivityShikigami').randomWaitEvents,
+      hasLength(3),
+    );
+  });
+
   test('parses lifecycle and excludes scheduled restart from anomalies', () {
     const content = '''
 2026-09-01 00:00:00.000 | INFO | Start scheduler loop: 笙
