@@ -415,6 +415,30 @@ class I18n {
   static const String behaviorAnalysisAnomalyLane = 'behavior_analysis_anomaly_lane',
       behaviorAnalysisTaskLane = 'behavior_analysis_task_lane',
       behaviorAnalysisLifecycleLane = 'behavior_analysis_lifecycle_lane';
+  static const String behaviorAnalysisClimbSettlement =
+          'behavior_analysis_climb_settlement',
+      behaviorAnalysisClimbSettlementDescription =
+          'behavior_analysis_climb_settlement_description',
+      behaviorAnalysisClimbTemplates = 'behavior_analysis_climb_templates',
+      behaviorAnalysisClimbBattles = 'behavior_analysis_climb_battles',
+      behaviorAnalysisClimbWeighted = 'behavior_analysis_climb_weighted',
+      behaviorAnalysisClimbDetails = 'behavior_analysis_climb_details',
+      behaviorAnalysisClimbBursts = 'behavior_analysis_climb_bursts',
+      behaviorAnalysisClimbLatestTemplate =
+          'behavior_analysis_climb_latest_template',
+      behaviorAnalysisClimbDetailBattles =
+          'behavior_analysis_climb_detail_battles',
+      behaviorAnalysisClimbBurstBattles =
+          'behavior_analysis_climb_burst_battles',
+      behaviorAnalysisClimbCategoryDistribution =
+          'behavior_analysis_climb_category_distribution',
+      behaviorAnalysisClimbActual = 'behavior_analysis_climb_actual',
+      behaviorAnalysisClimbExpected = 'behavior_analysis_climb_expected',
+      behaviorAnalysisClimbClickPath = 'behavior_analysis_climb_click_path',
+      behaviorAnalysisClimbWaits = 'behavior_analysis_climb_waits',
+      behaviorAnalysisClimbNoWeighted = 'behavior_analysis_climb_no_weighted',
+      behaviorAnalysisClimbNoClicks = 'behavior_analysis_climb_no_clicks',
+      behaviorAnalysisClimbNoWaits = 'behavior_analysis_climb_no_waits';
   static const String taskManage = 'task_manage',
       taskManageTitle = 'task_manage_title',
       taskSearchHint = 'task_search_hint';

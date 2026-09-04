@@ -17,6 +17,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
       Get.find<HomeBehaviorAnalysisController>();
 
   String _selectedTaskName = '';
+  bool _showClimbClickPath = true;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +57,7 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
         .map((event) => event.taskName)
         .toSet()
         .length;
+    final climbSettlement = filteredAnalysis.climbSettlementAnalysis;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
@@ -155,6 +157,18 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
           ],
         ),
         const SizedBox(height: 18),
+        if (climbSettlement.hasData) ...[
+          _ClimbSettlementSection(
+            analysis: climbSettlement,
+            showPath: _showClimbClickPath,
+            onShowPathChanged: (value) {
+              setState(() => _showClimbClickPath = value);
+            },
+          ),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 22),
+        ],
         _SectionHeader(
           title: I18n.behaviorAnalysisClickPath.tr,
           trailing: Row(
@@ -248,6 +262,234 @@ class _BehaviorAnalysisPanelState extends State<BehaviorAnalysisPanel> {
     return sorted.length.isOdd
         ? sorted[middle]
         : (sorted[middle - 1] + sorted[middle]) / 2;
+  }
+}
+
+class _ClimbSettlementSection extends StatelessWidget {
+  const _ClimbSettlementSection({
+    required this.analysis,
+    required this.showPath,
+    required this.onShowPathChanged,
+  });
+
+  static const _expectedWeights = {
+    'A': 5,
+    'B': 5,
+    'C': 25,
+    'D': 20,
+    'E': 45,
+  };
+
+  final BehaviorClimbSettlementAnalysis analysis;
+  final bool showPath;
+  final ValueChanged<bool> onShowPathChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final randomBursts = analysis.bursts
+        .where((event) => event.mode == 'random')
+        .toList(growable: false);
+    final detailDecisions = analysis.decisions
+        .where((event) => event.mode == 'detail')
+        .toList(growable: false);
+    final detailCount = detailDecisions.isEmpty
+        ? analysis.detailViews.length
+        : detailDecisions.length;
+    final latestTemplate = analysis.templates.isEmpty
+        ? ''
+        : analysis.templates.last.detail;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(title: I18n.behaviorAnalysisClimbSettlement.tr),
+        const SizedBox(height: 5),
+        Text(
+          I18n.behaviorAnalysisClimbSettlementDescription.tr,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 18,
+          runSpacing: 8,
+          children: [
+            _SummaryValue(
+              value: analysis.templates.length.toString(),
+              label: I18n.behaviorAnalysisClimbTemplates.tr,
+            ),
+            _SummaryValue(
+              value: analysis.decisions.length.toString(),
+              label: I18n.behaviorAnalysisClimbBattles.tr,
+            ),
+            _SummaryValue(
+              value: analysis.weightedClicks.length.toString(),
+              label: I18n.behaviorAnalysisClimbWeighted.tr,
+            ),
+            _SummaryValue(
+              value: detailCount.toString(),
+              label: I18n.behaviorAnalysisClimbDetails.tr,
+            ),
+            _SummaryValue(
+              value: randomBursts.length.toString(),
+              label: I18n.behaviorAnalysisClimbBursts.tr,
+            ),
+          ],
+        ),
+        if (latestTemplate.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.grid_view_outlined, size: 17),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  '${I18n.behaviorAnalysisClimbLatestTemplate.tr}：$latestTemplate',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ],
+        if (detailDecisions.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(
+            '${I18n.behaviorAnalysisClimbDetailBattles.tr}：'
+            '${detailDecisions.map((event) => '#${event.battleNumber} (${event.detailProgress}/${event.detailTarget})').join('、')}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        if (randomBursts.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(
+            '${I18n.behaviorAnalysisClimbBurstBattles.tr}：'
+            '${randomBursts.map((event) => '#${event.battleNumber}').join('、')}',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        const SizedBox(height: 18),
+        _SectionHeader(
+          title: I18n.behaviorAnalysisClimbCategoryDistribution.tr,
+        ),
+        const SizedBox(height: 8),
+        if (analysis.weightedClicks.isEmpty)
+          _EmptySection(message: I18n.behaviorAnalysisClimbNoWeighted.tr)
+        else
+          _ClimbCategoryDistribution(
+            counts: analysis.categoryCounts,
+            expectedWeights: _expectedWeights,
+          ),
+        const SizedBox(height: 18),
+        _SectionHeader(
+          title: I18n.behaviorAnalysisClimbClickPath.tr,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(I18n.behaviorAnalysisShowPath.tr),
+              const SizedBox(width: 6),
+              Switch(value: showPath, onChanged: onShowPathChanged),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (analysis.clicks.isEmpty)
+          _EmptySection(message: I18n.behaviorAnalysisClimbNoClicks.tr)
+        else
+          BehaviorClickPathChart(
+            points: analysis.clicks,
+            showPath: showPath,
+          ),
+        const SizedBox(height: 18),
+        _SectionHeader(title: I18n.behaviorAnalysisClimbWaits.tr),
+        const SizedBox(height: 8),
+        if (analysis.waits.isEmpty)
+          _EmptySection(message: I18n.behaviorAnalysisClimbNoWaits.tr)
+        else
+          BehaviorRandomWaitChart(events: analysis.waits),
+      ],
+    );
+  }
+}
+
+class _ClimbCategoryDistribution extends StatelessWidget {
+  const _ClimbCategoryDistribution({
+    required this.counts,
+    required this.expectedWeights,
+  });
+
+  final Map<String, int> counts;
+  final Map<String, int> expectedWeights;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = counts.values.fold<int>(0, (sum, value) => sum + value);
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        for (final category in const ['A', 'B', 'C', 'D', 'E']) ...[
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final count = counts[category] ?? 0;
+              final proportion = total == 0 ? 0.0 : count / total;
+              final valueText = '$count  '
+                  '${I18n.behaviorAnalysisClimbActual.tr} '
+                  '${(proportion * 100).toStringAsFixed(1)}%  ·  '
+                  '${I18n.behaviorAnalysisClimbExpected.tr} '
+                  '${expectedWeights[category]}%';
+              final progress = ClipRRect(
+                borderRadius: BorderRadius.circular(3),
+                child: LinearProgressIndicator(
+                  minHeight: 8,
+                  value: proportion,
+                  backgroundColor: scheme.surfaceContainerHighest,
+                ),
+              );
+              final categoryLabel = Text(
+                category,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              );
+              if (constraints.maxWidth < 420) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      children: [
+                        categoryLabel,
+                        const Spacer(),
+                        Text(
+                          valueText,
+                          style: Theme.of(context).textTheme.labelSmall,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    progress,
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  SizedBox(width: 26, child: categoryLabel),
+                  Expanded(child: progress),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 170,
+                    child: Text(
+                      valueText,
+                      textAlign: TextAlign.end,
+                      style: Theme.of(context).textTheme.labelSmall,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          if (category != 'E') const SizedBox(height: 8),
+        ],
+      ],
+    );
   }
 }
 

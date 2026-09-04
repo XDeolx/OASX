@@ -89,6 +89,56 @@ void main() {
     );
   });
 
+  test('separates climb settlement templates, modes, regions, and waits', () {
+    const content = '''
+2026-09-04 10:00:00.000 | INFO | Scheduler: Start task `ActivityShikigami`
+2026-09-04 10:00:01.000 | INFO | Climb settlement template: A=R1/R10, B=R2/R4, C=R6, D=R9, E=R7
+2026-09-04 10:01:00.000 | INFO | Climb settlement behavior: battle=1, kind=weighted, detail=8/24
+2026-09-04 10:01:01.000 | INFO | Climb settlement weighted click: battle=1, category=C, region=R6, point=(1042,398)
+2026-09-04 10:01:01.100 | INFO | [0.14s] Click (1042,398) @ CLIMB_SETTLEMENT_C_R6
+2026-09-04 10:02:00.000 | INFO | Climb settlement behavior: battle=2, kind=detail, detail=24/24
+2026-09-04 10:02:01.000 | INFO | Climb settlement detail: battle=2, region=Detail2, point=(725,401)
+2026-09-04 10:02:01.100 | INFO | [0.13s] Click (725,401) @ CLIMB_SETTLEMENT_DETAIL2
+2026-09-04 10:02:01.200 | INFO | 爬塔查看详情随机等待: battle=2, delay=1.23s
+2026-09-04 10:02:02.500 | INFO | Climb settlement burst: battle=2, reason=detail, clicks=4, anchor_region=R7
+2026-09-04 10:02:02.600 | INFO | [0.11s] Click (1100,580) @ CLIMB_SETTLEMENT_BURST_E_DETAIL
+2026-09-04 10:03:00.000 | INFO | Climb settlement behavior: battle=3, kind=burst, detail=1/31
+2026-09-04 10:03:01.000 | INFO | Climb settlement burst: battle=3, reason=random, clicks=3, anchor_region=R7
+2026-09-04 10:03:01.100 | INFO | 爬塔快速结算随机等待: battle=3, reason=random, click=2/3, delay=0.124s
+2026-09-04 10:04:00.000 | INFO | Scheduler: End task `ActivityShikigami`
+''';
+
+    final analysis = BehaviorAnalysisDay.fromMap(parseBehaviorLogPayload({
+      'script_name': '玖',
+      'date': '2026-09-04',
+      'content': content,
+    }));
+    final climb = analysis.climbSettlementAnalysis;
+
+    expect(climb.hasData, isTrue);
+    expect(climb.templates, hasLength(1));
+    expect(climb.templates.single.detail, contains('A=R1/R10'));
+    expect(climb.decisions, hasLength(3));
+    expect(climb.modeCounts, {
+      'weighted': 1,
+      'detail': 1,
+      'burst': 1,
+    });
+    expect(climb.weightedClicks.single.category, 'C');
+    expect(climb.weightedClicks.single.region, 'R6');
+    expect(climb.categoryCounts['C'], 1);
+    expect(climb.detailViews.single.region, 'Detail2');
+    expect(climb.bursts, hasLength(2));
+    expect(climb.bursts.last.mode, 'random');
+    expect(climb.bursts.last.clickCount, 3);
+    expect(climb.clicks, hasLength(3));
+    expect(climb.waits, hasLength(2));
+    expect(climb.waits.first.delaySeconds, 1.23);
+
+    final unrelated = analysis.filteredByTask('RealmRaid');
+    expect(unrelated.climbSettlementAnalysis.hasData, isFalse);
+  });
+
   test('parses lifecycle and excludes scheduled restart from anomalies', () {
     const content = '''
 2026-09-01 00:00:00.000 | INFO | Start scheduler loop: 笙
